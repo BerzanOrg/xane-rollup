@@ -33,6 +33,19 @@ importers:
         specifier: ^5.3.3
         version: 5.3.3
 
+  client:
+    dependencies:
+      o1js:
+        specifier: ^0.15.2
+        version: 0.15.2
+      xane:
+        specifier: workspace:*
+        version: link:../packages/xane
+    devDependencies:
+      '@types/node':
+        specifier: ^20.10.0
+        version: 20.10.6
+
   docs:
     dependencies:
       '@astrojs/check':
