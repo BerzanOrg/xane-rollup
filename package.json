@@ -8,9 +8,9 @@
     "scripts": {
         "lint": "eslint .",
         "format": "prettier --write .",
-        "test": "node --test --import tsx/esm packages/**/tests/*.ts",
-        "build:packages": "pnpm -r --filter=./packages/** build",
-        "build:docs": "pnpm -r --filter=./docs build"
+        "test": "node --test --import tsx/esm tests/src/*.ts",
+        "build:packages": "pnpm -r -F=./packages/** build",
+        "build:docs": "pnpm -r -F=./docs build"
     },
     "keywords": [],
     "packageManager": "pnpm@8.14.0",
@@ -27,8 +27,5 @@
         "prettier": "^3.1.1",
         "tsx": "^4.7.0",
         "typescript": "^5.3.3"
-    },
-    "dependencies": {
-        "o1js": "^0.15.2"
     }
 }

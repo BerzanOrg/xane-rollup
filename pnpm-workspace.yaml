@@ -1,5 +1,6 @@
 packages:
-  - 'packages/*'
-  - 'client'
+  - 'packages/xane'
   - 'frontend'
+  - 'client'
+  - 'tests'
   - 'docs'

@@ -7,10 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      o1js:
-        specifier: ^0.15.2
-        version: 0.15.2
     devDependencies:
       '@typescript-eslint/eslint-plugin':
         specifier: ^6.17.0
@@ -80,6 +76,19 @@ importers:
         version: 5.0.11
 
   packages/xane:
+    dependencies:
+      o1js:
+        specifier: ^0.15.2
+        version: 0.15.2
+
+  tests:
+    dependencies:
+      o1js:
+        specifier: ^0.15.2
+        version: 0.15.2
+      xane:
+        specifier: workspace:*
+        version: link:../packages/xane
     devDependencies:
       '@types/node':
         specifier: ^20.10.0
