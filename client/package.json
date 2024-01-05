@@ -1,0 +1,14 @@
+{
+    "name": "client",
+    "version": "0.0.1",
+    "license": "GPL-3.0-only",
+    "private": true,
+    "type": "module",
+    "devDependencies": {
+        "@types/node": "^20.10.0"
+    },
+    "dependencies": {
+        "o1js": "^0.15.2",
+        "xane": "workspace:*"
+    }
+}
