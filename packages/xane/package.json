@@ -1,0 +1,33 @@
+{
+    "name": "xane",
+    "version": "0.0.0",
+    "description": "Package To Be Used In Xane Client & Frontend",
+    "keywords": [
+        "xane",
+        "o1js",
+        "mina",
+        "zkapp",
+        "dapp",
+        "zero-knowledge",
+        "zk",
+        "zk-snark"
+    ],
+    "license": "GPL-3.0-only",
+    "type": "module",
+    "scripts": {
+        "build": "tsc"
+    },
+    "author": {
+        "name": "Berzan",
+        "url": "https://berzan.org",
+        "email": "berzan@tutanota.com"
+    },
+    "main": "build/index.js",
+    "types": "build/index.d.ts",
+    "files": [
+        "build"
+    ],
+    "dependencies": {
+        "o1js": "^0.15.2"
+    }
+}
