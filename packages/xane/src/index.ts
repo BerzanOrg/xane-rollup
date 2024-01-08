@@ -1,1 +1,6 @@
-export { Program } from "./program"
+export { RollupProgram } from "./RollupProgram"
+export { RollupProof } from "./RollupProof"
+export { RollupState } from "./RollupState"
+export { UserMinaBalance } from "./Structs"
+export { MINA_BALANCES_HEIGHT, MinaBalancesWitness } from "./constants"
+// export { RollupContract } from "./RollupContract"

@@ -8,9 +8,10 @@
     "scripts": {
         "lint": "eslint .",
         "format": "prettier --write .",
-        "test": "node --test --import tsx/esm tests/src/*.ts",
+        "test": "node --test --import tsx/esm tests/src/*.test.ts",
         "build:packages": "pnpm -r -F=./packages/** build",
-        "build:docs": "pnpm -r -F=./docs build"
+        "build:docs": "pnpm -r -F=./docs build",
+        "dev:docs": "pnpm -r -F=./docs dev"
     },
     "keywords": [],
     "packageManager": "pnpm@8.14.0",
