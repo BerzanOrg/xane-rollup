@@ -1,6 +1,5 @@
 import {
     DeployArgs,
-    Field,
     Permissions,
     SmartContract,
     State,
@@ -8,9 +7,10 @@ import {
     state,
 } from "o1js"
 import { RollupProof } from "./RollupProof"
+import { RollupState } from "./RollupState"
 
 export class RollupContract extends SmartContract {
-    @state(Field) rollupStateHash = State<Field>()
+    @state(RollupState) rollupState = State<RollupState>()
 
     deploy(args?: DeployArgs) {
         super.deploy(args)
@@ -23,12 +23,12 @@ export class RollupContract extends SmartContract {
         })
     }
 
-    @method initStateHash(stateHash: Field) {
-        this.rollupStateHash.set(stateHash)
+    @method initState(stateHash: RollupState) {
+        this.rollupState.set(stateHash)
     }
 
-    @method updateStateHash(proof: RollupProof) {
+    @method updateState(proof: RollupProof) {
         proof.verify()
-        this.rollupStateHash.set(proof.publicInput.hash())
+        this.rollupState.set(proof.publicInput)
     }
 }

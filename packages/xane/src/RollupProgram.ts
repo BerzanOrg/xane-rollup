@@ -1,6 +1,7 @@
-import { PublicKey, UInt64, ZkProgram } from "o1js"
+import { Field, PublicKey, UInt64, ZkProgram } from "o1js"
 import { RollupState } from "./RollupState"
-import { MinaBalancesWitness } from "./constants"
+import { BalanceWitness } from "./BalanceStorage"
+import { BalanceEntry } from "./BalanceEntry"
 
 export const RollupProgram = ZkProgram({
     name: "rollup-program",
@@ -8,21 +9,29 @@ export const RollupProgram = ZkProgram({
     publicInput: RollupState,
 
     methods: {
-        updateBalance: {
-            privateInputs: [MinaBalancesWitness, PublicKey, UInt64, UInt64],
+        placeOrder: {
+            privateInputs: [Field, BalanceWitness, PublicKey, UInt64],
 
             method(
-                state: RollupState,
-                witness: MinaBalancesWitness,
+                rollupState: RollupState,
+                tokenId: Field,
+                userBalanceWitness: BalanceWitness,
                 userAddress: PublicKey,
                 currentBalance: UInt64,
-                newBalance: UInt64,
             ) {
-                state.updateMinaBalance(
-                    witness,
-                    userAddress,
-                    currentBalance,
-                    newBalance,
+                const balanceEntry = new BalanceEntry({
+                    address: userAddress,
+                    amount: currentBalance,
+                    tokenId,
+                })
+
+                const currentRoot = userBalanceWitness.calculateRoot(
+                    balanceEntry.hash(),
+                )
+
+                rollupState.balancesRoot.assertEquals(
+                    currentRoot,
+                    "calculated root doesn't match rollup state",
                 )
             },
         },
