@@ -32,4 +32,27 @@ export class BalanceEntry extends Struct({
             .equals(other.tokenId)
             .and(this.address.equals(other.address))
     }
+
+    /**
+     *  Returns true, if the balance entry's amount is greater than or equal to the given amount.
+     *
+     *  Otherwise, returns false.
+     */
+    public hasMoreThan(params: { amount: UInt64 }): Bool {
+        return this.amount.greaterThanOrEqual(params.amount)
+    }
+
+    /**
+     * Adds the given amount to the balance entry.
+     */
+    public add(params: { amount: UInt64 }) {
+        this.amount = this.amount.add(params.amount)
+    }
+
+    /**
+     * Subtracts the given amount from the balance entry.
+     */
+    public sub(params: { amount: UInt64 }) {
+        this.amount = this.amount.sub(params.amount)
+    }
 }

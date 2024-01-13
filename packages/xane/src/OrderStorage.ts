@@ -8,7 +8,7 @@ import { OrderEntry } from "./OrderEntry"
 export const ORDERS_TREE_HEIGHT = 10
 
 /**
- * Height of the merkle tree that stores user balance entries.
+ * Merkle witness for the merkle tree that stores order entries.
  */
 export class OrderWitness extends MerkleWitness(ORDERS_TREE_HEIGHT) {}
 

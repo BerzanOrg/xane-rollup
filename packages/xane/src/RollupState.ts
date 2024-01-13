@@ -6,6 +6,6 @@ import { Field, Struct } from "o1js"
 export class RollupState extends Struct({
     /** Merkle root for the Merkle tree that stores token balances of users. */
     balancesRoot: Field,
-    /** Merkle root for the Merkle tree that stores orders. */
-    ordersRoot: Field,
+    /** Merkle root for the Merkle tree that stores AMM pools. */
+    poolsRoot: Field,
 }) {}

@@ -8,7 +8,7 @@ import { BalanceEntry } from "./BalanceEntry"
 export const BALANCES_TREE_HEIGHT = 10
 
 /**
- * Height of the merkle tree that stores user balance entries.
+ * Merkle witness for the merkle tree that stores user balance entries.
  */
 export class BalanceWitness extends MerkleWitness(BALANCES_TREE_HEIGHT) {}
 
