@@ -1,7 +1,7 @@
 import { Field, PublicKey, UInt64, ZkProgram } from "o1js"
 import { RollupState } from "./RollupState"
 import { BalanceWitness } from "./BalanceStorage"
-import { BalanceEntry } from "./BalanceEntry"
+import { Balance } from "./Balance"
 import { PoolWitness } from "./PoolStorage"
 import { Pool } from "./Pool"
 
@@ -38,13 +38,13 @@ export const RollupProgram = ZkProgram({
                 baseTokenBalanceWitness: BalanceWitness,
                 quoteTokenBalanceWitness: BalanceWitness,
             ) {
-                const baseTokenBalanceEntry = new BalanceEntry({
+                const baseTokenBalance = new Balance({
                     address: senderAddress,
                     amount: currentSenderBaseTokenBalance,
                     tokenId: baseTokenId,
                 })
 
-                const quoteTokenBalanceEntry = new BalanceEntry({
+                const quoteTokenBalance = new Balance({
                     address: senderAddress,
                     amount: currentSenderQuoteTokenBalance,
                     tokenId: baseTokenId,
@@ -59,14 +59,14 @@ export const RollupProgram = ZkProgram({
 
                 rollupState.balancesRoot.assertEquals(
                     baseTokenBalanceWitness.calculateRoot(
-                        baseTokenBalanceEntry.hash(),
+                        baseTokenBalance.hash(),
                     ),
                     "calculated balances root is not valid",
                 )
 
                 rollupState.balancesRoot.assertEquals(
                     quoteTokenBalanceWitness.calculateRoot(
-                        quoteTokenBalanceEntry.hash(),
+                        quoteTokenBalance.hash(),
                     ),
                     "calculated balances root is not valid",
                 )
@@ -76,20 +76,18 @@ export const RollupProgram = ZkProgram({
                     "calculated pools root is not valid",
                 )
 
-                baseTokenBalanceEntry
-                    .hasMoreThan({
-                        amount: initialBaseTokenAmount,
-                    })
-                    .assertTrue("base token balance is not enough")
+                baseTokenBalance.amount.assertGreaterThanOrEqual(
+                    initialBaseTokenAmount,
+                    "base token balance is not enough",
+                )
 
-                quoteTokenBalanceEntry
-                    .hasMoreThan({
-                        amount: initialQuoteTokenAmount,
-                    })
-                    .assertTrue("quote token balance is not enough")
+                quoteTokenBalance.amount.assertGreaterThanOrEqual(
+                    initialQuoteTokenAmount,
+                    "quote token balance is not enough",
+                )
 
-                baseTokenBalanceEntry.sub({ amount: initialBaseTokenAmount })
-                quoteTokenBalanceEntry.sub({ amount: initialQuoteTokenAmount })
+                baseTokenBalance.sub({ amount: initialBaseTokenAmount })
+                quoteTokenBalance.sub({ amount: initialQuoteTokenAmount })
 
                 // todo: Calculate a single Merkle root for the Merkle tree that stores user balances.
                 const newBalancesRoot = Field.empty()
@@ -131,13 +129,13 @@ export const RollupProgram = ZkProgram({
                 baseTokenBalanceWitness: BalanceWitness,
                 quoteTokenBalanceWitness: BalanceWitness,
             ) {
-                const baseTokenBalanceEntry = new BalanceEntry({
+                const baseTokenBalance = new Balance({
                     address: senderAddress,
                     amount: senderCurrentBaseTokenBalance,
                     tokenId: baseTokenId,
                 })
 
-                const quoteTokenBalanceEntry = new BalanceEntry({
+                const quoteTokenBalance = new Balance({
                     address: senderAddress,
                     amount: senderCurrentQuoteTokenBalance,
                     tokenId: baseTokenId,
@@ -152,14 +150,14 @@ export const RollupProgram = ZkProgram({
 
                 rollupState.balancesRoot.assertEquals(
                     baseTokenBalanceWitness.calculateRoot(
-                        baseTokenBalanceEntry.hash(),
+                        baseTokenBalance.hash(),
                     ),
                     "calculated balances root is not valid",
                 )
 
                 rollupState.balancesRoot.assertEquals(
                     quoteTokenBalanceWitness.calculateRoot(
-                        quoteTokenBalanceEntry.hash(),
+                        quoteTokenBalance.hash(),
                     ),
                     "calculated balances root is not valid",
                 )
@@ -169,20 +167,18 @@ export const RollupProgram = ZkProgram({
                     "calculated pools root is not valid",
                 )
 
-                baseTokenBalanceEntry
-                    .hasMoreThan({
-                        amount: baseTokenAmountToAdd,
-                    })
-                    .assertTrue("base token balance is not enough")
+                baseTokenBalance.amount.assertGreaterThanOrEqual(
+                    baseTokenAmountToAdd,
+                    "base token balance is not enough",
+                )
 
-                quoteTokenBalanceEntry
-                    .hasMoreThan({
-                        amount: quoteTokenAmountToAdd,
-                    })
-                    .assertTrue("quote token balance is not enough")
+                quoteTokenBalance.amount.assertGreaterThanOrEqual(
+                    quoteTokenAmountToAdd,
+                    "quote token balance is not enough",
+                )
 
-                baseTokenBalanceEntry.sub({ amount: baseTokenAmountToAdd })
-                quoteTokenBalanceEntry.sub({ amount: quoteTokenAmountToAdd })
+                baseTokenBalance.sub({ amount: baseTokenAmountToAdd })
+                quoteTokenBalance.sub({ amount: quoteTokenAmountToAdd })
 
                 pool.isBalanced({
                     baseTokenAmount: baseTokenAmountToAdd,
@@ -203,12 +199,25 @@ export const RollupProgram = ZkProgram({
                 rollupState.poolsRoot = newPoolsRoot
             },
         },
-        swap: {
+        removeLiqudity: {
             privateInputs: [],
 
             method(rollupState: RollupState) {
                 rollupState
-                // todo: Implement swap logic.
+            },
+        },
+        buy: {
+            privateInputs: [],
+
+            method(rollupState: RollupState) {
+                rollupState
+            },
+        },
+        sell: {
+            privateInputs: [],
+
+            method(rollupState: RollupState) {
+                rollupState
             },
         },
     },

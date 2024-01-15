@@ -8,4 +8,6 @@ export class RollupState extends Struct({
     balancesRoot: Field,
     /** Merkle root for the Merkle tree that stores AMM pools. */
     poolsRoot: Field,
+    /** Merkle root for the Merkle tree that stores users' liquidities. */
+    liquiditiesRoot: Field,
 }) {}

@@ -1,6 +1,6 @@
 import { Field, MerkleTree, MerkleWitness, PublicKey, UInt64 } from "o1js"
-import { XaneError } from "./Error"
-import { BalanceEntry } from "./BalanceEntry"
+import { Errors } from "./Errors"
+import { Balance } from "./Balance"
 
 /**
  * Height of the merkle tree that stores user balance entries.
@@ -17,7 +17,7 @@ export class BalanceWitness extends MerkleWitness(BALANCES_TREE_HEIGHT) {}
  */
 export class BalanceStorage {
     private innerTree: MerkleTree
-    private innerArray: Array<BalanceEntry>
+    private innerArray: Array<Balance>
     private counter: number
 
     /**
@@ -30,30 +30,30 @@ export class BalanceStorage {
     /**
      * Creates a new instance of `BalanceStorage` by using old balance entries to restore.
      */
-    public static restore(oldBalances: Array<BalanceEntry>): BalanceStorage {
+    public static restore(oldBalances: Array<Balance>): BalanceStorage {
         return new BalanceStorage(oldBalances)
     }
 
     /**
      *  The constructor of `BalanceStorage` class.
      */
-    private constructor(initialBalances?: Array<BalanceEntry>) {
+    private constructor(initialBalances?: Array<Balance>) {
         this.innerTree = new MerkleTree(BALANCES_TREE_HEIGHT)
         this.innerArray = initialBalances ?? []
         this.counter = 0
 
-        this.innerArray.forEach(this.storeBalance)
+        this.innerArray.forEach(this.store)
     }
 
     /**
-     *  Increments `this.counter` by one.
+     *  Increments the internal counter that stores the count of balance entries.
      */
     private incrementCounter(): void {
         this.counter += 1
     }
 
     /**
-     *  Returns `this.counter`.
+     *  Returns the internal counter that stores the count of balance entries.
      */
     private getCounter(): number {
         return this.counter
@@ -62,22 +62,41 @@ export class BalanceStorage {
     /**
      *  Returns the Merkle root of the Merkle tree that stores balance entries.
      */
-    public getBalancesRoot(): Field {
+    public getRoot(): Field {
         return this.innerTree.getRoot()
     }
 
     /**
-     *  Stores the given balance entry.
+     * Returns the merkle witness of the balance with the given token ID and address.
      *
-     * Returns an error if a balance entry with the same token ID and address already exists.
+     * Returns an error if a balance with the same token ID and address is not found.
      */
-    public storeBalance(balance: BalanceEntry): void | Error {
-        const existingBalance = this.innerArray.find((bal) =>
-            bal.sameTokenIdAndAddress(balance).toBoolean(),
+    public getWitness(params: {
+        tokenId: Field
+        address: PublicKey
+    }): BalanceWitness | Error {
+        const index = this.innerArray.findIndex((balance) =>
+            balance.same(params).toBoolean(),
         )
 
-        if (existingBalance !== undefined)
-            return Error(XaneError.BalanceAlreadyExists)
+        if (index === -1) return Error(Errors.BalanceNotFound)
+
+        const witness = this.innerTree.getWitness(BigInt(index))
+
+        return new BalanceWitness(witness)
+    }
+
+    /**
+     *  Stores the given balance.
+     *
+     * Returns an error if a balance with the same token ID and address already exists.
+     */
+    public store(balance: Balance): void | Error {
+        const existingBalance = this.innerArray.find((bal) =>
+            bal.same(balance).toBoolean(),
+        )
+
+        if (existingBalance !== undefined) return Error(Errors.BalanceExists)
 
         const index = this.getCounter()
 
@@ -90,23 +109,23 @@ export class BalanceStorage {
     /**
      * Returns the token with the given token ID balance of the given address.
      *
-     * Returns an error if a balance entry with the same token ID and address doesn't exist.
+     * Returns an error if a balance with the same token ID and address is not found.
      */
-    public getBalance(params: {
+    public get(params: {
         tokenId: Field
         address: PublicKey
-    }): UInt64 | Error {
+    }): Balance | Error {
         const balance = this.innerArray.find((balance) =>
-            balance.sameTokenIdAndAddress(params).toBoolean(),
+            balance.same(params).toBoolean(),
         )
 
-        return balance?.amount || Error(XaneError.BalanceNotFound)
+        return balance || Error(Errors.BalanceNotFound)
     }
 
     /**
      * Adds the given amount to the token with the given token ID balance of the given address.
      *
-     * Returns an error if a balance entry with the same token ID and address doesn't exist.
+     * Returns an error if a balance with the same token ID and address is not found.
      */
     public addBalance(params: {
         tokenId: Field
@@ -114,18 +133,18 @@ export class BalanceStorage {
         amountToAdd: UInt64
     }): void | Error {
         const balance = this.innerArray.find((balance) =>
-            balance.sameTokenIdAndAddress(params).toBoolean(),
+            balance.same(params).toBoolean(),
         )
 
-        if (!balance) return Error(XaneError.BalanceNotFound)
+        if (!balance) return Error(Errors.BalanceNotFound)
 
         balance.amount = balance.amount.add(params.amountToAdd)
     }
 
     /**
-     * Subtracts the given amount to the token with the given token ID balance of the given address.
+     * Subtracts the given amount from the token with the given token ID balance of the given address.
      *
-     * Returns an error if a balance entry with the same token ID and address doesn't exist.
+     * Returns an error if a balance with the same token ID and address is not found.
      */
     public subBalance(params: {
         tokenId: Field
@@ -133,31 +152,11 @@ export class BalanceStorage {
         amountToSub: UInt64
     }): void | Error {
         const balance = this.innerArray.find((balance) =>
-            balance.sameTokenIdAndAddress(params).toBoolean(),
+            balance.same(params).toBoolean(),
         )
 
-        if (!balance) return Error(XaneError.BalanceNotFound)
+        if (!balance) return Error(Errors.BalanceNotFound)
 
         balance.amount = balance.amount.sub(params.amountToSub)
-    }
-
-    /**
-     * Returns the merkle witness of the balance entry with the given token ID and address.
-     *
-     * Returns an error if a balance entry with the same token ID and address doesn't exist.
-     */
-    public getBalanceWitness(params: {
-        tokenId: Field
-        address: PublicKey
-    }): BalanceWitness | Error {
-        const index = this.innerArray.findIndex((balance) =>
-            balance.sameTokenIdAndAddress(params).toBoolean(),
-        )
-
-        if (index === -1) return Error(XaneError.BalanceNotFound)
-
-        const witness = this.innerTree.getWitness(BigInt(index))
-
-        return new BalanceWitness(witness)
     }
 }

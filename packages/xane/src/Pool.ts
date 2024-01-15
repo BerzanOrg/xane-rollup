@@ -61,16 +61,16 @@ export class Pool extends Struct({
      *
      *  Otherwise, returns false.
      */
-    public sameBaseAndQuoteTokens(other: {
-        baseTokenId: Field
-        quoteTokenId: Field
-    }): Bool {
-        return this.baseTokenId
-            .equals(other.baseTokenId)
-            .and(this.quoteTokenId.equals(other.quoteTokenId))
+    public same(other: { baseTokenId: Field; quoteTokenId: Field }): Bool {
+        return Bool(false)
             .or(
-                this.baseTokenId
-                    .equals(other.quoteTokenId)
+                Bool(true)
+                    .and(this.baseTokenId.equals(other.baseTokenId))
+                    .and(this.quoteTokenId.equals(other.quoteTokenId)),
+            )
+            .or(
+                Bool(true)
+                    .and(this.baseTokenId.equals(other.quoteTokenId))
                     .and(this.quoteTokenId.equals(other.baseTokenId)),
             )
     }
@@ -102,7 +102,7 @@ export class Pool extends Struct({
     }
 
     /**
-     * Adds liquidty using the given amounts, and calculates a new `k`.
+     * Adds liquidity using the given amounts, and calculates a new `k`.
      */
     public addLiquidity(params: {
         baseTokenAmount: UInt64
@@ -113,6 +113,28 @@ export class Pool extends Struct({
         )
 
         const newQuoteTokenAmount = this.quoteTokenAmount.add(
+            params.quoteTokenAmount,
+        )
+
+        const newK = newBaseTokenAmount.mul(newQuoteTokenAmount)
+
+        this.baseTokenAmount = newBaseTokenAmount
+        this.quoteTokenAmount = newQuoteTokenAmount
+        this.k = newK
+    }
+
+    /**
+     * Removes liquidity using the given amounts, and calculates a new `k`.
+     */
+    public removeLiquidity(params: {
+        baseTokenAmount: UInt64
+        quoteTokenAmount: UInt64
+    }) {
+        const newBaseTokenAmount = this.baseTokenAmount.sub(
+            params.baseTokenAmount,
+        )
+
+        const newQuoteTokenAmount = this.quoteTokenAmount.sub(
             params.quoteTokenAmount,
         )
 

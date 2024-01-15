@@ -1,5 +1,5 @@
 import { Field, MerkleTree, MerkleWitness, UInt64 } from "o1js"
-import { XaneError } from "./Error"
+import { Errors } from "./Errors"
 import { Pool } from "./Pool"
 
 /**
@@ -42,18 +42,18 @@ export class PoolStorage {
         this.innerArray = initialPools ?? []
         this.counter = 0
 
-        this.innerArray.forEach(this.storePool)
+        this.innerArray.forEach(this.store)
     }
 
     /**
-     *  Increments `this.counter` by one.
+     *  Increments the internal counter that stores the count of AMM pools.
      */
     private incrementCounter(): void {
         this.counter += 1
     }
 
     /**
-     *  Returns `this.counter`.
+     *  Returns the internal counter that stores the count of AMM pools.
      */
     private getCounter(): number {
         return this.counter
@@ -62,8 +62,28 @@ export class PoolStorage {
     /**
      *  Returns the Merkle root of the Merkle tree that stores AMM pools.
      */
-    public getPoolsRoot(): Field {
+    public getRoot(): Field {
         return this.innerTree.getRoot()
+    }
+
+    /**
+     * Returns the merkle witness of the pool with the given base and quote token IDs.
+     *
+     * Returns an error if an AMM pool with the given base and quote token IDs is not found.
+     */
+    public getWitness(params: {
+        baseTokenId: Field
+        quoteTokenId: Field
+    }): PoolWitness | Error {
+        const index = this.innerArray.findIndex((pool) =>
+            pool.same(params).toBoolean(),
+        )
+
+        if (index === -1) return Error(Errors.PoolNotFound)
+
+        const witness = this.innerTree.getWitness(BigInt(index))
+
+        return new PoolWitness(witness)
     }
 
     /**
@@ -71,13 +91,12 @@ export class PoolStorage {
      *
      * Returns an error if an AMM pool with the same base & quote tokens already exists.
      */
-    public storePool(pool: Pool): void | Error {
+    public store(pool: Pool): void | Error {
         const existingPool = this.innerArray.find((p) =>
-            p.sameBaseAndQuoteTokens(pool).toBoolean(),
+            p.same(pool).toBoolean(),
         )
 
-        if (existingPool !== undefined)
-            return Error(XaneError.PoolAlreadyExists)
+        if (existingPool !== undefined) return Error(Errors.PoolExists)
 
         const index = this.getCounter()
 
@@ -90,23 +109,23 @@ export class PoolStorage {
     /**
      * Returns the AMM pool with the given base and quote token IDs.
      *
-     * Returns an error if an AMM pool with the given base and quote token IDs doesn't exist.
+     * Returns an error if an AMM pool with the given base and quote token IDs is not found.
      */
-    public getPool(params: {
+    public get(params: {
         baseTokenId: Field
         quoteTokenId: Field
     }): Pool | Error {
         const pool = this.innerArray.find((pool) =>
-            pool.sameBaseAndQuoteTokens(params).toBoolean(),
+            pool.same(params).toBoolean(),
         )
 
-        return pool || Error(XaneError.PoolNotFound)
+        return pool || Error(Errors.PoolNotFound)
     }
 
     /**
      * Adds the given amounts as a liquidity to the AMM pool with the given base and quote token IDs.
      *
-     * Returns an error if an AMM pool with the given base and quote token IDs doesn't exist.
+     * Returns an error if an AMM pool with the given base and quote token IDs is not found.
      */
     public addLiquidity(params: {
         baseTokenId: Field
@@ -115,31 +134,31 @@ export class PoolStorage {
         quoteTokenAmount: UInt64
     }): void | Error {
         const pool = this.innerArray.find((pool) =>
-            pool.sameBaseAndQuoteTokens(params).toBoolean(),
+            pool.same(params).toBoolean(),
         )
 
-        if (!pool) return Error(XaneError.PoolNotFound)
+        if (!pool) return Error(Errors.PoolNotFound)
 
         pool.addLiquidity(params)
     }
 
     /**
-     * Returns the merkle witness of the pool with the given base and quote token IDs.
+     * Removes the given amounts as a liquidity to the AMM pool with the given base and quote token IDs.
      *
-     * Returns an error if an AMM pool with the given base and quote token IDs doesn't exist.
+     * Returns an error if an AMM pool with the given base and quote token IDs is not found.
      */
-    public getPoolWitness(params: {
+    public removeLiquidity(params: {
         baseTokenId: Field
         quoteTokenId: Field
-    }): PoolWitness | Error {
-        const index = this.innerArray.findIndex((pool) =>
-            pool.sameBaseAndQuoteTokens(params).toBoolean(),
+        baseTokenAmount: UInt64
+        quoteTokenAmount: UInt64
+    }): void | Error {
+        const pool = this.innerArray.find((pool) =>
+            pool.same(params).toBoolean(),
         )
 
-        if (index === -1) return Error(XaneError.PoolNotFound)
+        if (!pool) return Error(Errors.PoolNotFound)
 
-        const witness = this.innerTree.getWitness(BigInt(index))
-
-        return new PoolWitness(witness)
+        pool.removeLiquidity(params)
     }
 }
