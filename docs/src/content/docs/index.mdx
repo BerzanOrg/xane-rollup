@@ -12,7 +12,7 @@ hero:
           icon: external
           variant: primary
         - text: Read Docs V1
-          link: /guides/example/
+          link: /docs-v1/intro
           icon: right-arrow
           variant: primary
 ---
@@ -23,10 +23,16 @@ import { Card, CardGrid } from "@astrojs/starlight/components"
 
 <CardGrid stagger>
     <Card title="A decentralized exchange" icon="open-book">
-        Xane is a decentralized exchange for Mina ecosystem.
+        Xane is a decentralized exchange for all Mina ecosystem.
     </Card>
-    <Card title="A layer 2 network" icon="rocket">
-        Xane is a layer 2 network on top of [Mina
-        Protocol](https://minaprotocol.com/).
+    <Card title="A rollup for Mina" icon="sun">
+        Xane is a layer 2 network on top of [Mina Protocol](https://minaprotocol.com/).
+    </Card>
+    <Card title="Automated market maker" icon="pencil">
+        Xane is an AMM based on `x.y=k` equation.
+    </Card>
+    <Card title="Extensive compatibility" icon="puzzle">
+        Xane supports any token on [Mina Protocol](https://minaprotocol.com/) no matter
+        what.
     </Card>
 </CardGrid>
