@@ -1,19 +1,17 @@
-import { BalanceStorage } from "./BalanceStorage"
-import { Balance } from "./Balance"
-import { LiquidityStorage } from "./LiquidityStorage"
-import { PoolStorage } from "./PoolStorage"
-import { Pool } from "./Pool"
-import { Liquidity } from "./Liquidity"
+import { StorageForBalances } from "./StorageForBalances"
+import { StorageForLiquidities } from "./StoreageForLiquidities"
+import { StorageForPools } from "./StorageForPools"
 import { RollupState } from "./RollupState"
+import { Balance, Liquidity, Pool } from "./Structs"
 
 /**
  * Stores all the data of a rollup.
  */
 export class RollupStorage {
     public state: RollupState
-    public balances: BalanceStorage
-    public pools: PoolStorage
-    public liquidities: LiquidityStorage
+    public balances: StorageForBalances
+    public pools: StorageForPools
+    public liquidities: StorageForLiquidities
 
     /**
      * Creates a new instance of `RollupStorage`.
@@ -41,14 +39,22 @@ export class RollupStorage {
         initialPools?: Array<Pool>,
         initialLiquidites?: Array<Liquidity>,
     ) {
-        if (initialBalances && initialPools && initialLiquidites) {
-            this.balances = BalanceStorage.restore(initialBalances)
-            this.pools = PoolStorage.restore(initialPools)
-            this.liquidities = LiquidityStorage.restore(initialLiquidites)
+        if (initialBalances) {
+            this.balances = StorageForBalances.restore(initialBalances)
         } else {
-            this.balances = BalanceStorage.empty()
-            this.pools = PoolStorage.empty()
-            this.liquidities = LiquidityStorage.empty()
+            this.balances = StorageForBalances.empty()
+        }
+
+        if (initialPools) {
+            this.pools = StorageForPools.restore(initialPools)
+        } else {
+            this.pools = StorageForPools.empty()
+        }
+
+        if (initialLiquidites) {
+            this.liquidities = StorageForLiquidities.restore(initialLiquidites)
+        } else {
+            this.liquidities = StorageForLiquidities.empty()
         }
 
         this.state = new RollupState({

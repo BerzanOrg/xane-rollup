@@ -1,14 +1,10 @@
-import {
-    DeployArgs,
-    Permissions,
-    SmartContract,
-    State,
-    method,
-    state,
-} from "o1js"
-import { RollupProof } from "./RollupProof"
+import { DeployArgs, Permissions, SmartContract, State, method, state } from "o1js"
 import { RollupState } from "./RollupState"
+import { RollupProof } from "./RollupProof"
 
+/**
+ * The on-chain smart contract of the rollup that stores rollup state.
+ */
 export class RollupContract extends SmartContract {
     @state(RollupState) rollupState = State<RollupState>()
 

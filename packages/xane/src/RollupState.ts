@@ -10,4 +10,15 @@ export class RollupState extends Struct({
     poolsRoot: Field,
     /** Merkle root for the Merkle tree that stores users' liquidities. */
     liquiditiesRoot: Field,
-}) {}
+}) {
+    /**
+     * Returns the `Array<Field>` representation of the `RollupState`.
+     */
+    public toFields(): Array<Field> {
+        return [
+            ...this.balancesRoot.toFields(),
+            ...this.poolsRoot.toFields(),
+            ...this.liquiditiesRoot.toFields(),
+        ]
+    }
+}

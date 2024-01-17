@@ -1,24 +1,10 @@
-export { Balance } from "./Balance"
-export {
-    BalanceStorage,
-    BalanceWitness,
-    BALANCES_TREE_HEIGHT,
-} from "./BalanceStorage"
-
-export { Pool } from "./Pool"
-export { PoolStorage, PoolWitness, POOLS_TREE_HEIGHT } from "./PoolStorage"
-
-export { Liquidity } from "./Liquidity"
-export {
-    LiquidityStorage,
-    LiqudityWitness,
-    LIQUIDITY_TREE_HEIGHT,
-} from "./LiquidityStorage"
-
-export { RollupStorage } from "./RollupStorage"
-export { RollupProgram } from "./RollupProgram"
-export { RollupProof } from "./RollupProof"
-export { RollupState } from "./RollupState"
 export { RollupContract } from "./RollupContract"
+export { RollupProgram } from "./RollupProgram"
+export { RollupState } from "./RollupState"
+export { RollupStorage } from "./RollupStorage"
+export { RollupErrors } from "./RollupErrors"
 
-export { Errors } from "./Errors"
+export type { BalanceWitness } from "./StorageForBalances"
+export type { PoolWitness } from "./StorageForPools"
+export type { LiqudityWitness } from "./StoreageForLiquidities"
+export type { RollupProof } from "./RollupProof"

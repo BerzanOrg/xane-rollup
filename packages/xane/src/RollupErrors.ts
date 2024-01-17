@@ -1,4 +1,4 @@
-export enum Errors {
+export enum RollupErrors {
     BalanceNotFound = "balance is not found",
     BalanceExists = "balance already exists",
     OrderNotFound = "order is not found",
@@ -7,4 +7,5 @@ export enum Errors {
     PoolExists = "pool already exists",
     LiqudityNotFound = "liquidity is not found",
     LiqudityExists = "liquidity already exists",
+    CallerSignatureNotValid = "caller signature is not valid",
 }

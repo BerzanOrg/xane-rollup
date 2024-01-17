@@ -1,6 +1,9 @@
-import { Field, MerkleTree, MerkleWitness, PublicKey, UInt64 } from "o1js"
-import { Errors } from "./Errors"
-import { Balance } from "./Balance"
+import { Field, MerkleTree, MerkleWitness, Poseidon, PublicKey } from "o1js"
+import { RollupErrors } from "./RollupErrors"
+import { Balance } from "./Structs"
+
+// Change the type of `Error` to provide error messagees in a type-safe way.
+declare function Error(msg: `${RollupErrors}`): Error
 
 /**
  * Height of the merkle tree that stores user balance entries.
@@ -15,7 +18,7 @@ export class BalanceWitness extends MerkleWitness(BALANCES_TREE_HEIGHT) {}
 /**
  * Stores user balance entries with an array and a merkle tree.
  */
-export class BalanceStorage {
+export class StorageForBalances {
     private innerTree: MerkleTree
     private innerArray: Array<Balance>
     private counter: number
@@ -23,15 +26,15 @@ export class BalanceStorage {
     /**
      * Creates a new instance of `BalanceStorage`.
      */
-    public static empty(): BalanceStorage {
-        return new BalanceStorage()
+    public static empty(): StorageForBalances {
+        return new StorageForBalances()
     }
 
     /**
      * Creates a new instance of `BalanceStorage` by using old balance entries to restore.
      */
-    public static restore(oldBalances: Array<Balance>): BalanceStorage {
-        return new BalanceStorage(oldBalances)
+    public static restore(oldBalances: Array<Balance>): StorageForBalances {
+        return new StorageForBalances(oldBalances)
     }
 
     /**
@@ -75,11 +78,9 @@ export class BalanceStorage {
         tokenId: Field
         address: PublicKey
     }): BalanceWitness | Error {
-        const index = this.innerArray.findIndex((balance) =>
-            balance.same(params).toBoolean(),
-        )
+        const index = this.innerArray.findIndex((balance) => balance.matches(params))
 
-        if (index === -1) return Error(Errors.BalanceNotFound)
+        if (index === -1) return Error("balance is not found")
 
         const witness = this.innerTree.getWitness(BigInt(index))
 
@@ -87,21 +88,21 @@ export class BalanceStorage {
     }
 
     /**
-     *  Stores the given balance.
+     * Stores the given balance.
      *
      * Returns an error if a balance with the same token ID and address already exists.
      */
     public store(balance: Balance): void | Error {
-        const existingBalance = this.innerArray.find((bal) =>
-            bal.same(balance).toBoolean(),
-        )
+        const existingBalance = this.innerArray.find(balance.matches)
 
-        if (existingBalance !== undefined) return Error(Errors.BalanceExists)
+        if (existingBalance !== undefined) return Error("balance already exists")
 
         const index = this.getCounter()
 
+        const hash = Poseidon.hash(balance.toFields())
+
         this.innerArray[index] = balance
-        this.innerTree.setLeaf(BigInt(index), balance.hash())
+        this.innerTree.setLeaf(BigInt(index), hash)
 
         this.incrementCounter()
     }
@@ -111,52 +112,9 @@ export class BalanceStorage {
      *
      * Returns an error if a balance with the same token ID and address is not found.
      */
-    public get(params: {
-        tokenId: Field
-        address: PublicKey
-    }): Balance | Error {
-        const balance = this.innerArray.find((balance) =>
-            balance.same(params).toBoolean(),
-        )
+    public get(params: { tokenId: Field; address: PublicKey }): Balance | Error {
+        const balance = this.innerArray.find((balance) => balance.matches(params))
 
-        return balance || Error(Errors.BalanceNotFound)
-    }
-
-    /**
-     * Adds the given amount to the token with the given token ID balance of the given address.
-     *
-     * Returns an error if a balance with the same token ID and address is not found.
-     */
-    public addBalance(params: {
-        tokenId: Field
-        address: PublicKey
-        amountToAdd: UInt64
-    }): void | Error {
-        const balance = this.innerArray.find((balance) =>
-            balance.same(params).toBoolean(),
-        )
-
-        if (!balance) return Error(Errors.BalanceNotFound)
-
-        balance.amount = balance.amount.add(params.amountToAdd)
-    }
-
-    /**
-     * Subtracts the given amount from the token with the given token ID balance of the given address.
-     *
-     * Returns an error if a balance with the same token ID and address is not found.
-     */
-    public subBalance(params: {
-        tokenId: Field
-        address: PublicKey
-        amountToSub: UInt64
-    }): void | Error {
-        const balance = this.innerArray.find((balance) =>
-            balance.same(params).toBoolean(),
-        )
-
-        if (!balance) return Error(Errors.BalanceNotFound)
-
-        balance.amount = balance.amount.sub(params.amountToSub)
+        return balance || Error("balance is not found")
     }
 }

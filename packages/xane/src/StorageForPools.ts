@@ -1,6 +1,9 @@
-import { Field, MerkleTree, MerkleWitness, UInt64 } from "o1js"
-import { Errors } from "./Errors"
-import { Pool } from "./Pool"
+import { Field, MerkleTree, MerkleWitness, Poseidon } from "o1js"
+import { RollupErrors } from "./RollupErrors"
+import { Pool } from "./Structs"
+
+// Change the type of `Error` to provide error messagees in a type-safe way.
+declare function Error(msg: `${RollupErrors}`): Error
 
 /**
  * Height of the merkle tree that stores AMM pools.
@@ -15,7 +18,7 @@ export class PoolWitness extends MerkleWitness(POOLS_TREE_HEIGHT) {}
 /**
  * Stores AMM pools with an array and a merkle tree.
  */
-export class PoolStorage {
+export class StorageForPools {
     private innerTree: MerkleTree
     private innerArray: Array<Pool>
     private counter: number
@@ -23,15 +26,15 @@ export class PoolStorage {
     /**
      * Creates a new instance of `PoolStorage`.
      */
-    public static empty(): PoolStorage {
-        return new PoolStorage()
+    public static empty(): StorageForPools {
+        return new StorageForPools()
     }
 
     /**
      * Creates a new instance of `PoolStorage` by using old AMM pools to restore.
      */
-    public static restore(oldPools: Array<Pool>): PoolStorage {
-        return new PoolStorage(oldPools)
+    public static restore(oldPools: Array<Pool>): StorageForPools {
+        return new StorageForPools(oldPools)
     }
 
     /**
@@ -76,10 +79,10 @@ export class PoolStorage {
         quoteTokenId: Field
     }): PoolWitness | Error {
         const index = this.innerArray.findIndex((pool) =>
-            pool.same(params).toBoolean(),
+            pool.matches(params).toBoolean(),
         )
 
-        if (index === -1) return Error(Errors.PoolNotFound)
+        if (index === -1) return Error("pool is not found")
 
         const witness = this.innerTree.getWitness(BigInt(index))
 
@@ -92,16 +95,16 @@ export class PoolStorage {
      * Returns an error if an AMM pool with the same base & quote tokens already exists.
      */
     public store(pool: Pool): void | Error {
-        const existingPool = this.innerArray.find((p) =>
-            p.same(pool).toBoolean(),
-        )
+        const existingPool = this.innerArray.find((p) => p.matches(pool).toBoolean())
 
-        if (existingPool !== undefined) return Error(Errors.PoolExists)
+        if (existingPool !== undefined) return Error("pool already exists")
 
         const index = this.getCounter()
 
+        const hash = Poseidon.hash(pool.toFields())
+
         this.innerArray[index] = pool
-        this.innerTree.setLeaf(BigInt(index), pool.hash())
+        this.innerTree.setLeaf(BigInt(index), hash)
 
         this.incrementCounter()
     }
@@ -111,54 +114,9 @@ export class PoolStorage {
      *
      * Returns an error if an AMM pool with the given base and quote token IDs is not found.
      */
-    public get(params: {
-        baseTokenId: Field
-        quoteTokenId: Field
-    }): Pool | Error {
-        const pool = this.innerArray.find((pool) =>
-            pool.same(params).toBoolean(),
-        )
+    public get(params: { baseTokenId: Field; quoteTokenId: Field }): Pool | Error {
+        const pool = this.innerArray.find((pool) => pool.matches(params).toBoolean())
 
-        return pool || Error(Errors.PoolNotFound)
-    }
-
-    /**
-     * Adds the given amounts as a liquidity to the AMM pool with the given base and quote token IDs.
-     *
-     * Returns an error if an AMM pool with the given base and quote token IDs is not found.
-     */
-    public addLiquidity(params: {
-        baseTokenId: Field
-        quoteTokenId: Field
-        baseTokenAmount: UInt64
-        quoteTokenAmount: UInt64
-    }): void | Error {
-        const pool = this.innerArray.find((pool) =>
-            pool.same(params).toBoolean(),
-        )
-
-        if (!pool) return Error(Errors.PoolNotFound)
-
-        pool.addLiquidity(params)
-    }
-
-    /**
-     * Removes the given amounts as a liquidity to the AMM pool with the given base and quote token IDs.
-     *
-     * Returns an error if an AMM pool with the given base and quote token IDs is not found.
-     */
-    public removeLiquidity(params: {
-        baseTokenId: Field
-        quoteTokenId: Field
-        baseTokenAmount: UInt64
-        quoteTokenAmount: UInt64
-    }): void | Error {
-        const pool = this.innerArray.find((pool) =>
-            pool.same(params).toBoolean(),
-        )
-
-        if (!pool) return Error(Errors.PoolNotFound)
-
-        pool.removeLiquidity(params)
+        return pool || Error("pool is not found")
     }
 }

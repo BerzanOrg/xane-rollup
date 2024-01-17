@@ -1,5 +1,5 @@
 import { Field, MerkleTree, MerkleWitness } from "o1js"
-import { Errors } from "./Errors"
+import { RollupErrors } from "./RollupErrors"
 import { OrderEntry } from "./OrderEntry"
 
 /**
@@ -86,7 +86,7 @@ export class OrderStorage {
     public getOrder(params: { orderId: number }): OrderEntry | Error {
         const order = this.innerArray.at(params.orderId)
 
-        return order || Error(Errors.OrderNotFound)
+        return order || Error(RollupErrors.OrderNotFound)
     }
 
     /**
@@ -97,7 +97,7 @@ export class OrderStorage {
     public makeCancelled(params: { orderId: number }): void | Error {
         const order = this.innerArray.at(params.orderId)
 
-        if (!order) return Error(Errors.OrderNotFound)
+        if (!order) return Error(RollupErrors.OrderNotFound)
 
         order.cancel()
     }
@@ -110,7 +110,7 @@ export class OrderStorage {
     public makeExecuted(params: { orderId: number }): void | Error {
         const order = this.innerArray.at(params.orderId)
 
-        if (!order) return Error(Errors.OrderNotFound)
+        if (!order) return Error(RollupErrors.OrderNotFound)
 
         order.execute()
     }
@@ -123,7 +123,7 @@ export class OrderStorage {
     public getOrderWitness(params: { orderId: number }): OrderWitness | Error {
         const order = this.innerArray.at(params.orderId)
 
-        if (!order) return Error(Errors.OrderNotFound)
+        if (!order) return Error(RollupErrors.OrderNotFound)
 
         const witness = this.innerTree.getWitness(BigInt(params.orderId))
 
