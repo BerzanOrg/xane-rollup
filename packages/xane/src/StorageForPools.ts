@@ -78,9 +78,7 @@ export class StorageForPools {
         baseTokenId: Field
         quoteTokenId: Field
     }): PoolWitness | Error {
-        const index = this.innerArray.findIndex((pool) =>
-            pool.matches(params).toBoolean(),
-        )
+        const index = this.innerArray.findIndex((pool) => pool.matches(params))
 
         if (index === -1) return Error("pool is not found")
 
@@ -95,7 +93,7 @@ export class StorageForPools {
      * Returns an error if an AMM pool with the same base & quote tokens already exists.
      */
     public store(pool: Pool): void | Error {
-        const existingPool = this.innerArray.find((p) => p.matches(pool).toBoolean())
+        const existingPool = this.innerArray.find((p) => p.isSimilar(pool))
 
         if (existingPool !== undefined) return Error("pool already exists")
 
@@ -115,7 +113,7 @@ export class StorageForPools {
      * Returns an error if an AMM pool with the given base and quote token IDs is not found.
      */
     public get(params: { baseTokenId: Field; quoteTokenId: Field }): Pool | Error {
-        const pool = this.innerArray.find((pool) => pool.matches(params).toBoolean())
+        const pool = this.innerArray.find((pool) => pool.matches(params))
 
         return pool || Error("pool is not found")
     }

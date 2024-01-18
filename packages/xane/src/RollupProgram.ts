@@ -1,6 +1,6 @@
 import { Field, Poseidon, PublicKey, Signature, UInt64, ZkProgram } from "o1js"
 import { PoolWitness } from "./StorageForPools"
-import { LiqudityWitness } from "./StoreageForLiquidities"
+import { LiqudityWitness } from "./StorageForLiquidities"
 import { Balance, Liquidity, Pool } from "./Structs"
 import { RollupState } from "./RollupState"
 
@@ -103,7 +103,7 @@ export const RollupProgram = ZkProgram({
                 const liquidity = new Liquidity({
                     baseTokenId: balanceBaseToken.tokenId,
                     quoteTokenId: balanceQuoteToken.tokenId,
-                    amount: new UInt64(65535),
+                    lpTokenAmount: new UInt64(65535),
                     provider: sender,
                 })
 
@@ -239,7 +239,7 @@ export const RollupProgram = ZkProgram({
                 pool.k = poolNewK
                 pool.lpTokensSupply = poolNewLpTokensSupply
 
-                liquidity.amount = liquidity.amount.add(lpTokensToMint)
+                liquidity.lpTokenAmount = liquidity.lpTokenAmount.add(lpTokensToMint)
 
                 balanceBaseToken.amount = balanceBaseToken.amount.sub(amountBaseToken)
                 balanceQuoteToken.amount = balanceQuoteToken.amount.sub(amountQuoteToken)
@@ -374,7 +374,7 @@ export const RollupProgram = ZkProgram({
                 pool.k = poolNewK
                 pool.lpTokensSupply = poolNewLpTokensSupply
 
-                liquidity.amount = liquidity.amount.sub(lpTokensToBurn)
+                liquidity.lpTokenAmount = liquidity.lpTokenAmount.sub(lpTokensToBurn)
 
                 balanceBaseToken.amount =
                     balanceBaseToken.amount.add(senderBaseTokenAmount)

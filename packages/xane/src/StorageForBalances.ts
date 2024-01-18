@@ -93,7 +93,7 @@ export class StorageForBalances {
      * Returns an error if a balance with the same token ID and address already exists.
      */
     public store(balance: Balance): void | Error {
-        const existingBalance = this.innerArray.find(balance.matches)
+        const existingBalance = this.innerArray.find((bal) => balance.matches(bal))
 
         if (existingBalance !== undefined) return Error("balance already exists")
 

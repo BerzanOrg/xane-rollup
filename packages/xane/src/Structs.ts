@@ -38,7 +38,7 @@ export class Balance extends Struct({
 export class Liquidity extends Struct({
     baseTokenId: Field,
     quoteTokenId: Field,
-    amount: UInt64,
+    lpTokenAmount: UInt64,
     provider: PublicKey,
 }) {
     /**
@@ -48,25 +48,56 @@ export class Liquidity extends Struct({
         return [
             ...this.baseTokenId.toFields(),
             ...this.quoteTokenId.toFields(),
-            ...this.amount.toFields(),
+            ...this.lpTokenAmount.toFields(),
             ...this.provider.toFields(),
         ]
     }
 
     /**
-     *  Returns true, if given base token ID, quote token ID, and provider matches the `Liquidity`'s.
+     *  Returns `true`, if given base token ID, quote token ID, and provider matches the `Liquidity`'s.
      *
-     *  Otherwise, returns false.
+     *  Otherwise, returns `false`.
      */
     public matches(params: {
         baseTokenId: Field
         quoteTokenId: Field
         provider: PublicKey
-    }): Bool {
+    }): boolean {
         return Bool(true)
             .and(this.baseTokenId.equals(params.baseTokenId))
             .and(this.quoteTokenId.equals(params.quoteTokenId))
             .and(this.provider.equals(params.provider))
+            .toBoolean()
+    }
+
+    /**
+     *  Returns `true`, if given base token ID, quote token ID, and provider matches the `Liquidity`'s.
+     *
+     *  Otherwise, returns `false`.
+     *
+     * NOTE: Even if base token ID and quote token ID is in the wrong order, it still returns `true`, because it means similar.
+     */
+    public isSimilar(params: {
+        baseTokenId: Field
+        quoteTokenId: Field
+        provider: PublicKey
+    }): boolean {
+        return Bool(true)
+            .and(this.provider.equals(params.provider))
+            .and(
+                Bool(false)
+                    .or(
+                        Bool(true)
+                            .and(this.baseTokenId.equals(params.baseTokenId))
+                            .and(this.quoteTokenId.equals(params.quoteTokenId)),
+                    )
+                    .or(
+                        Bool(true)
+                            .and(this.baseTokenId.equals(params.quoteTokenId))
+                            .and(this.quoteTokenId.equals(params.baseTokenId)),
+                    ),
+            )
+            .toBoolean()
     }
 }
 
@@ -96,11 +127,11 @@ export class Pool extends Struct({
     }
 
     /**
-     *  Returns true, if given base token ID, and quote token ID matches the `Pool`'s.
+     *  Returns `true`, if given base token ID, and quote token ID matches the `Pool`'s.
      *
-     *  Otherwise, returns false.
+     *  Otherwise, returns `false`.
      */
-    public matches(other: { baseTokenId: Field; quoteTokenId: Field }): Bool {
+    public matches(other: { baseTokenId: Field; quoteTokenId: Field }): boolean {
         return Bool(false)
             .or(
                 Bool(true)
@@ -112,5 +143,28 @@ export class Pool extends Struct({
                     .and(this.baseTokenId.equals(other.quoteTokenId))
                     .and(this.quoteTokenId.equals(other.baseTokenId)),
             )
+            .toBoolean()
+    }
+
+    /**
+     *  Returns `true`, if given base token ID, and quote token ID matches the `Pool`'s.
+     *
+     *  Otherwise, returns `false`.
+     *
+     * NOTE: Even if base token ID and quote token ID is in the wrong order, it still returns `true`, because it means similar.
+     */
+    public isSimilar(other: { baseTokenId: Field; quoteTokenId: Field }): boolean {
+        return Bool(false)
+            .or(
+                Bool(true)
+                    .and(this.baseTokenId.equals(other.baseTokenId))
+                    .and(this.quoteTokenId.equals(other.quoteTokenId)),
+            )
+            .or(
+                Bool(true)
+                    .and(this.baseTokenId.equals(other.quoteTokenId))
+                    .and(this.quoteTokenId.equals(other.baseTokenId)),
+            )
+            .toBoolean()
     }
 }

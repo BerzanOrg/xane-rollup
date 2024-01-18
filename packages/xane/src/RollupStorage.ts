@@ -1,5 +1,5 @@
 import { StorageForBalances } from "./StorageForBalances"
-import { StorageForLiquidities } from "./StoreageForLiquidities"
+import { StorageForLiquidities } from "./StorageForLiquidities"
 import { StorageForPools } from "./StorageForPools"
 import { RollupState } from "./RollupState"
 import { Balance, Liquidity, Pool } from "./Structs"

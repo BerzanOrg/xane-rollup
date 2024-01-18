@@ -79,9 +79,7 @@ export class StorageForLiquidities {
         quoteTokenId: Field
         provider: PublicKey
     }): LiqudityWitness | Error {
-        const index = this.innerArray.findIndex((liquidity) =>
-            liquidity.matches(params).toBoolean(),
-        )
+        const index = this.innerArray.findIndex((liquidity) => liquidity.matches(params))
 
         if (index === -1) return Error("liquidity is not found")
 
@@ -96,7 +94,7 @@ export class StorageForLiquidities {
      * Returns an error if the user already has a liquidity for the AMM pool of the given base & quote token IDs.
      */
     public store(liquidity: Liquidity): void | Error {
-        const doesExist = this.innerArray.find((l) => l.matches(liquidity).toBoolean())
+        const doesExist = this.innerArray.find((l) => l.isSimilar(liquidity))
 
         if (doesExist) return Error("liquidity already exists")
 
@@ -120,9 +118,7 @@ export class StorageForLiquidities {
         quoteTokenId: Field
         provider: PublicKey
     }): Liquidity | Error {
-        const liquidity = this.innerArray.find((liquidity) =>
-            liquidity.matches(params).toBoolean(),
-        )
+        const liquidity = this.innerArray.find((liquidity) => liquidity.matches(params))
 
         return liquidity || Error("liquidity is not found")
     }
