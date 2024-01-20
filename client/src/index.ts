@@ -10,9 +10,7 @@ if (!clientPrivateKey) {
 }
 
 if (!clientPort) {
-    throw Error(
-        "Set `XANE_CLIENT_PORT` environment variable before running Xane client.",
-    )
+    throw Error("Set `XANE_CLIENT_PORT` environment variable before running Xane client.")
 }
 
 const client = Client.create({

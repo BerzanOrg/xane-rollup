@@ -4,6 +4,9 @@
     "license": "GPL-3.0-only",
     "private": true,
     "type": "module",
+    "scripts": {
+        "test": "tsc && node --test build/*.test.js"
+    },
     "devDependencies": {
         "@types/node": "^20.10.0"
     },

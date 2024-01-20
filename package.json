@@ -6,12 +6,16 @@
     "type": "module",
     "license": "GPL-3.0-only",
     "scripts": {
-        "lint": "eslint .",
-        "format": "prettier --write .",
-        "test": "node --test --import tsx/esm tests/src/*.test.ts",
-        "build:packages": "pnpm -r -F=./packages/** build",
+        "build:client": "pnpm -r -F=./client build",
         "build:docs": "pnpm -r -F=./docs build",
-        "dev:docs": "pnpm -r -F=./docs dev"
+        "build:frontend": "pnpm -r -F=./frontend build",
+        "build:packages": "pnpm -r -F=./packages/** build",
+        "dev:docs": "pnpm -r -F=./docs dev",
+        "dev:frontend": "pnpm -r -F=./frontend dev",
+        "clean": "find . \\( -name '.pnpm-store' -o -name 'build' -o -name 'node_modules' \\) -type d -exec rm -rf {} +",
+        "format": "prettier --write .",
+        "lint": "eslint .",
+        "test": "pnpm -r -F=./tests test"
     },
     "keywords": [],
     "packageManager": "pnpm@8.14.0",

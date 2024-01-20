@@ -1,6 +1,6 @@
 import { Field, MerkleTree, MerkleWitness, Poseidon, PublicKey } from "o1js"
-import { RollupErrors } from "./RollupErrors"
-import { Balance } from "./Structs"
+import { RollupErrors } from "./RollupErrors.js"
+import { Balance } from "./Structs.js"
 
 // Change the type of `Error` to provide error messagees in a type-safe way.
 declare function Error(msg: `${RollupErrors}`): Error
@@ -8,7 +8,7 @@ declare function Error(msg: `${RollupErrors}`): Error
 /**
  * Height of the merkle tree that stores user balance entries.
  */
-export const BALANCES_TREE_HEIGHT = 10
+export const BALANCES_TREE_HEIGHT = 5
 
 /**
  * Merkle witness for the merkle tree that stores user balance entries.
@@ -81,6 +81,19 @@ export class StorageForBalances {
         const index = this.innerArray.findIndex((balance) => balance.matches(params))
 
         if (index === -1) return Error("balance is not found")
+
+        const witness = this.innerTree.getWitness(BigInt(index))
+
+        return new BalanceWitness(witness)
+    }
+
+    /**
+     * Returns the merkle witness for the next empty leaf.
+     *
+     * Uses the internal counter that stores the count of balance entries.
+     */
+    public getWitnessNew(): BalanceWitness {
+        const index = this.getCounter()
 
         const witness = this.innerTree.getWitness(BigInt(index))
 

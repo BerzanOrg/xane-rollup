@@ -1,6 +1,6 @@
 import { Field, MerkleTree, MerkleWitness, Poseidon, PublicKey } from "o1js"
-import { RollupErrors } from "./RollupErrors"
-import { Liquidity } from "./Structs"
+import { RollupErrors } from "./RollupErrors.js"
+import { Liquidity } from "./Structs.js"
 
 // Change the type of `Error` to provide error messagees in a type-safe way.
 declare function Error(msg: `${RollupErrors}`): Error
@@ -8,7 +8,7 @@ declare function Error(msg: `${RollupErrors}`): Error
 /**
  * Height of the merkle tree that stores users' liquidities.
  */
-export const LIQUIDITY_TREE_HEIGHT = 10
+export const LIQUIDITY_TREE_HEIGHT = 5
 
 /**
  * Merkle witness for the merkle tree that stores users' liquidities.
@@ -82,6 +82,19 @@ export class StorageForLiquidities {
         const index = this.innerArray.findIndex((liquidity) => liquidity.matches(params))
 
         if (index === -1) return Error("liquidity is not found")
+
+        const witness = this.innerTree.getWitness(BigInt(index))
+
+        return new LiqudityWitness(witness)
+    }
+
+    /**
+     * Returns the merkle witness for the next empty leaf.
+     *
+     * Uses the internal counter that stores the count of users' liquidities.
+     */
+    public getWitnessNew(): LiqudityWitness {
+        const index = this.getCounter()
 
         const witness = this.innerTree.getWitness(BigInt(index))
 

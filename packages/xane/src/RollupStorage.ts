@@ -1,8 +1,8 @@
-import { StorageForBalances } from "./StorageForBalances"
-import { StorageForLiquidities } from "./StorageForLiquidities"
-import { StorageForPools } from "./StorageForPools"
-import { RollupState } from "./RollupState"
-import { Balance, Liquidity, Pool } from "./Structs"
+import { StorageForBalances } from "./StorageForBalances.js"
+import { StorageForLiquidities } from "./StorageForLiquidities.js"
+import { StorageForPools } from "./StorageForPools.js"
+import { RollupState } from "./RollupState.js"
+import { Balance, Liquidity, Pool } from "./Structs.js"
 
 /**
  * Stores all the data of a rollup.

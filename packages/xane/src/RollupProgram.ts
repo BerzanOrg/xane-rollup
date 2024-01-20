@@ -1,18 +1,25 @@
 import { Field, Poseidon, PublicKey, Signature, UInt64, ZkProgram } from "o1js"
-import { PoolWitness } from "./StorageForPools"
-import { LiqudityWitness } from "./StorageForLiquidities"
-import { Balance, Liquidity, Pool } from "./Structs"
-import { RollupState } from "./RollupState"
+import { PoolWitness } from "./StorageForPools.js"
+import { LiqudityWitness } from "./StorageForLiquidities.js"
+import { Balance, Liquidity, Pool } from "./Structs.js"
+import { RollupState } from "./RollupState.js"
 
 /**
  * The off-chain zk-program of the rollup that generates prooves.
  */
 export const RollupProgram = ZkProgram({
-    name: "xane",
+    name: "xane-program",
 
     publicInput: RollupState,
 
     methods: {
+        doNothing: {
+            privateInputs: [PublicKey, Signature],
+            method(rollupState: RollupState, sender: PublicKey, signature: Signature) {
+                const message: Array<Field> = []
+                signature.verify(sender, message).assertTrue()
+            },
+        },
         createPool: {
             privateInputs: [
                 PublicKey,

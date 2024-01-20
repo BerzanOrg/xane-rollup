@@ -1,5 +1,5 @@
 packages:
-  - 'packages/xane'
+  - 'packages/**'
   - 'frontend'
   - 'client'
   - 'tests'

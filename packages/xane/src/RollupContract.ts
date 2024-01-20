@@ -1,30 +1,40 @@
-import { DeployArgs, Permissions, SmartContract, State, method, state } from "o1js"
-import { RollupState } from "./RollupState"
-import { RollupProof } from "./RollupProof"
+import {
+    DeployArgs,
+    Field,
+    Permissions,
+    Poseidon,
+    SmartContract,
+    State,
+    method,
+    state,
+} from "o1js"
+import { RollupState } from "./RollupState.js"
+import { RollupProof } from "./RollupProof.js"
 
 /**
  * The on-chain smart contract of the rollup that stores rollup state.
  */
 export class RollupContract extends SmartContract {
-    @state(RollupState) rollupState = State<RollupState>()
+    @state(Field) rollupStateHash = State<Field>()
 
     deploy(args?: DeployArgs) {
         super.deploy(args)
 
         this.account.permissions.set({
             ...Permissions.allImpossible(),
+            access: Permissions.proof(),
             editState: Permissions.proof(),
-            send: Permissions.proof(),
-            receive: Permissions.proof(),
         })
     }
 
-    @method initState(stateHash: RollupState) {
-        this.rollupState.set(stateHash)
+    @method initStateHash(rollupState: RollupState) {
+        const hashOfRollupState = Poseidon.hash(rollupState.toFields())
+        this.rollupStateHash.set(hashOfRollupState)
     }
 
-    @method updateState(proof: RollupProof) {
+    @method updateStateHash(proof: RollupProof) {
         proof.verify()
-        this.rollupState.set(proof.publicInput)
+        const hashOfRollupState = Poseidon.hash(proof.publicInput.toFields())
+        this.rollupStateHash.set(hashOfRollupState)
     }
 }

@@ -1,6 +1,6 @@
 import { Field, MerkleTree, MerkleWitness, Poseidon } from "o1js"
-import { RollupErrors } from "./RollupErrors"
-import { Pool } from "./Structs"
+import { RollupErrors } from "./RollupErrors.js"
+import { Pool } from "./Structs.js"
 
 // Change the type of `Error` to provide error messagees in a type-safe way.
 declare function Error(msg: `${RollupErrors}`): Error
@@ -8,7 +8,7 @@ declare function Error(msg: `${RollupErrors}`): Error
 /**
  * Height of the merkle tree that stores AMM pools.
  */
-export const POOLS_TREE_HEIGHT = 10
+export const POOLS_TREE_HEIGHT = 5
 
 /**
  * Merkle witness for the merkle tree that stores AMM pools.
@@ -81,6 +81,19 @@ export class StorageForPools {
         const index = this.innerArray.findIndex((pool) => pool.matches(params))
 
         if (index === -1) return Error("pool is not found")
+
+        const witness = this.innerTree.getWitness(BigInt(index))
+
+        return new PoolWitness(witness)
+    }
+
+    /**
+     * Returns the merkle witness for the next empty leaf.
+     *
+     * Uses the internal counter that stores the count of AMM pools.
+     */
+    public getWitnessNew(): PoolWitness {
+        const index = this.getCounter()
 
         const witness = this.innerTree.getWitness(BigInt(index))
 

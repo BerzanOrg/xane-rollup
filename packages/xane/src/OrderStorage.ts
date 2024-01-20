@@ -1,6 +1,6 @@
 import { Field, MerkleTree, MerkleWitness } from "o1js"
-import { RollupErrors } from "./RollupErrors"
-import { OrderEntry } from "./OrderEntry"
+import { RollupErrors } from "./RollupErrors.js"
+import { OrderEntry } from "./OrderEntry.js"
 
 /**
  * Height of the merkle tree that stores order entries.
