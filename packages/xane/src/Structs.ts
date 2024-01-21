@@ -9,6 +9,27 @@ export class Balance extends Struct({
     amount: UInt64,
 }) {
     /**
+     * Creates an empty `Balance` with all the properties initialized to empty values.
+     */
+    public static empty(): Balance {
+        return new Balance({
+            tokenId: Field.empty(),
+            address: PublicKey.empty(),
+            amount: UInt64.empty(),
+        })
+    }
+
+    /**
+     * Returns true if the `Balance` equals `Balance.emtpy()`, if not returns false.
+     */
+    public isEmpty(): Bool {
+        return Bool(true)
+            .and(this.tokenId.equals(Field.empty()))
+            .and(this.address.equals(PublicKey.empty()))
+            .and(this.amount.equals(UInt64.empty()))
+    }
+
+    /**
      * Returns the `Array<Field>` representation of the `Balance`.
      */
     public toFields(): Array<Field> {
@@ -42,6 +63,18 @@ export class Liquidity extends Struct({
     provider: PublicKey,
 }) {
     /**
+     * Creates an empty `Liquidity` with all the properties initialized to empty values.
+     */
+    public static empty(): Liquidity {
+        return new Liquidity({
+            baseTokenId: Field.empty(),
+            quoteTokenId: Field.empty(),
+            lpTokenAmount: UInt64.empty(),
+            provider: PublicKey.empty(),
+        })
+    }
+
+    /**
      * Returns the `Array<Field>` representation of the `Liquidity`.
      */
     public toFields(): Array<Field> {
@@ -51,6 +84,17 @@ export class Liquidity extends Struct({
             ...this.lpTokenAmount.toFields(),
             ...this.provider.toFields(),
         ]
+    }
+
+    /**
+     * Returns true if the `Liquidity` equals `Liquidity.emtpy()`, if not returns false.
+     */
+    public isEmpty(): Bool {
+        return Bool(true)
+            .and(this.baseTokenId.equals(Field.empty()))
+            .and(this.quoteTokenId.equals(Field.empty()))
+            .and(this.lpTokenAmount.equals(UInt64.empty()))
+            .and(this.provider.equals(PublicKey.empty()))
     }
 
     /**
@@ -113,6 +157,20 @@ export class Pool extends Struct({
     lpTokensSupply: UInt64,
 }) {
     /**
+     * Creates an empty `Pool` with all the properties initialized to empty values.
+     */
+    public static empty(): Pool {
+        return new Pool({
+            baseTokenId: Field.empty(),
+            quoteTokenId: Field.empty(),
+            baseTokenAmount: UInt64.empty(),
+            quoteTokenAmount: UInt64.empty(),
+            k: UInt64.empty(),
+            lpTokensSupply: UInt64.empty(),
+        })
+    }
+
+    /**
      * Returns the `Array<Field>` representation of the `Pool`.
      */
     public toFields(): Array<Field> {
@@ -120,10 +178,23 @@ export class Pool extends Struct({
             ...this.baseTokenId.toFields(),
             ...this.quoteTokenId.toFields(),
             ...this.baseTokenAmount.toFields(),
-            ...this.baseTokenAmount.toFields(),
+            ...this.quoteTokenAmount.toFields(),
             ...this.k.toFields(),
             ...this.lpTokensSupply.toFields(),
         ]
+    }
+
+    /**
+     * Returns true if the `Pool` equals `Pool.emtpy()`, if not returns false.
+     */
+    public isEmpty(): Bool {
+        return Bool(true)
+            .and(this.baseTokenId.equals(Field.empty()))
+            .and(this.quoteTokenId.equals(Field.empty()))
+            .and(this.baseTokenAmount.equals(UInt64.empty()))
+            .and(this.quoteTokenAmount.equals(UInt64.empty()))
+            .and(this.k.equals(UInt64.empty()))
+            .and(this.lpTokensSupply.equals(UInt64.empty()))
     }
 
     /**

@@ -27,7 +27,9 @@ export const RollupProgram = ZkProgram({
                 Balance,
                 Balance,
                 // BalancePairWitness (todo: make a merkle witness for a pair of leaves)
+                Pool,
                 PoolWitness,
+                Liquidity,
                 LiqudityWitness,
                 UInt64,
                 UInt64,
@@ -39,7 +41,9 @@ export const RollupProgram = ZkProgram({
                 balanceBaseToken: Balance,
                 balanceQuoteToken: Balance,
                 // balancePairWitness (todo: make a merkle witness for a pair of leaves)
+                pool: Pool,
                 poolWitness: PoolWitness,
+                liquidity: Liquidity,
                 liquidityWitness: LiqudityWitness,
                 amountBaseToken: UInt64,
                 amountQuoteToken: UInt64,
@@ -54,7 +58,9 @@ export const RollupProgram = ZkProgram({
                     ...balanceBaseToken.toFields(),
                     ...balanceQuoteToken.toFields(),
                     // ...balancePairWitness.toFields(), (todo: make a merkle witness for a pair of leaves)
+                    ...pool.toFields(),
                     ...poolWitness.toFields(),
+                    ...liquidity.toFields(),
                     ...liquidityWitness.toFields(),
                     ...amountBaseToken.toFields(),
                     ...amountQuoteToken.toFields(),
@@ -91,6 +97,9 @@ export const RollupProgram = ZkProgram({
                 balanceBaseToken.amount.assertGreaterThanOrEqual(amountBaseToken)
                 balanceQuoteToken.amount.assertGreaterThanOrEqual(amountQuoteToken)
 
+                pool.isEmpty().assertTrue()
+                liquidity.isEmpty().assertTrue()
+
                 /*//////////////////////////////////////////////////////////////
                                             LOGIC
                 //////////////////////////////////////////////////////////////*/
@@ -98,21 +107,17 @@ export const RollupProgram = ZkProgram({
                 balanceBaseToken.amount = balanceBaseToken.amount.sub(amountBaseToken)
                 balanceQuoteToken.amount = balanceQuoteToken.amount.sub(amountQuoteToken)
 
-                const pool = new Pool({
-                    baseTokenId: balanceBaseToken.tokenId,
-                    quoteTokenId: balanceQuoteToken.tokenId,
-                    baseTokenAmount: amountBaseToken,
-                    quoteTokenAmount: amountQuoteToken,
-                    k: amountBaseToken.mul(amountQuoteToken),
-                    lpTokensSupply: new UInt64(65535),
-                })
+                pool.baseTokenId = balanceBaseToken.tokenId
+                pool.quoteTokenId = balanceQuoteToken.tokenId
+                pool.baseTokenAmount = amountBaseToken
+                pool.quoteTokenAmount = amountQuoteToken
+                pool.k = amountBaseToken.mul(amountQuoteToken)
+                pool.lpTokensSupply = new UInt64(65535)
 
-                const liquidity = new Liquidity({
-                    baseTokenId: balanceBaseToken.tokenId,
-                    quoteTokenId: balanceQuoteToken.tokenId,
-                    lpTokenAmount: new UInt64(65535),
-                    provider: sender,
-                })
+                liquidity.baseTokenId = balanceBaseToken.tokenId
+                liquidity.quoteTokenId = balanceQuoteToken.tokenId
+                liquidity.lpTokenAmount = new UInt64(65535)
+                liquidity.provider = sender
 
                 /*//////////////////////////////////////////////////////////////
                                         STATE UPDATES

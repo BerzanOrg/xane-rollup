@@ -1,9 +1,7 @@
 import { it, describe } from "node:test"
 import assert from "node:assert/strict"
 import { Field, PrivateKey, PublicKey, Signature, UInt64 } from "o1js"
-import { RollupStorage, Balance, RollupProgram } from "xane"
-
-// TODO: fix the error that happens when a merkle witness is used as a paremeter of a ZkProgram method
+import { RollupStorage, Balance, RollupProgram, Pool, Liquidity } from "xane"
 
 const utils = {
     storeBalanceThenTest: (storage: RollupStorage, initialBalance: Balance) => {
@@ -192,12 +190,17 @@ describe("Program", async () => {
         const baseTokenAmount = UInt64.from(1234n)
         const quoteTokenAmount = UInt64.from(54321n)
 
+        const pool = Pool.empty()
+        const liquidity = Liquidity.empty()
+
         const signature = Signature.create(berzanSecretKey, [
             ...storage.state.toFields(),
             ...baseTokenBalance.toFields(),
             ...quoteTokenBalance.toFields(),
             // ...balancePairWitness.toFields(), (todo: make a merkle witness for a pair of leaves)
+            ...pool.toFields(),
             ...poolWitness.toFields(),
+            ...liquidity.toFields(),
             ...liquidityWitness.toFields(),
             ...baseTokenAmount.toFields(),
             ...quoteTokenAmount.toFields(),
@@ -210,13 +213,121 @@ describe("Program", async () => {
             baseTokenBalance,
             quoteTokenBalance,
             // balancePairWitness (todo: make a merkle witness for a pair of leaves)
+            pool,
             poolWitness,
+            liquidity,
             liquidityWitness,
             baseTokenAmount,
             quoteTokenAmount,
         )
 
         proof.verify()
+
+        storage.pools.store(pool)
+        storage.liquidities.store(liquidity)
+    })
+
+    it("can' create a pool with a mistaken signature", async () => {
+        const baseTokenBalance = utils.getBalanceThenTest(
+            storage,
+            berzanAddress,
+            minaTokenId,
+        )
+        const quoteTokenBalance = utils.getBalanceThenTest(
+            storage,
+            berzanAddress,
+            usdcTokenId,
+        )
+
+        const poolWitness = storage.pools.getWitnessNew()
+        const liquidityWitness = storage.liquidities.getWitnessNew()
+
+        const baseTokenAmount = UInt64.from(1234n)
+        const quoteTokenAmount = UInt64.from(54321n)
+
+        const pool = Pool.empty()
+        const liquidity = Liquidity.empty()
+
+        const signature = Signature.create(berzanSecretKey, [])
+
+        try {
+            const proof = await RollupProgram.createPool(
+                storage.state,
+                berzanAddress,
+                signature,
+                baseTokenBalance,
+                quoteTokenBalance,
+                // balancePairWitness (todo: make a merkle witness for a pair of leaves)
+                pool,
+                poolWitness,
+                liquidity,
+                liquidityWitness,
+                baseTokenAmount,
+                quoteTokenAmount,
+            )
+
+            proof.verify()
+
+            assert(false, "should've failed")
+        } catch {
+            // it's failed like expected
+        }
+    })
+
+    it("can't create a pool when balances are not enough", async () => {
+        const baseTokenBalance = utils.getBalanceThenTest(
+            storage,
+            berzanAddress,
+            minaTokenId,
+        )
+        const quoteTokenBalance = utils.getBalanceThenTest(
+            storage,
+            berzanAddress,
+            usdcTokenId,
+        )
+
+        const poolWitness = storage.pools.getWitnessNew()
+        const liquidityWitness = storage.liquidities.getWitnessNew()
+
+        const baseTokenAmount = baseTokenBalance.amount.add(1)
+        const quoteTokenAmount = quoteTokenBalance.amount.add(1)
+
+        const pool = Pool.empty()
+        const liquidity = Liquidity.empty()
+
+        const signature = Signature.create(berzanSecretKey, [
+            ...storage.state.toFields(),
+            ...baseTokenBalance.toFields(),
+            ...quoteTokenBalance.toFields(),
+            // ...balancePairWitness.toFields(), (todo: make a merkle witness for a pair of leaves)
+            ...pool.toFields(),
+            ...poolWitness.toFields(),
+            ...liquidity.toFields(),
+            ...liquidityWitness.toFields(),
+            ...baseTokenAmount.toFields(),
+            ...quoteTokenAmount.toFields(),
+        ])
+
+        try {
+            const proof = await RollupProgram.createPool(
+                storage.state,
+                berzanAddress,
+                signature,
+                baseTokenBalance,
+                quoteTokenBalance,
+                // balancePairWitness (todo: make a merkle witness for a pair of leaves)
+                pool,
+                poolWitness,
+                liquidity,
+                liquidityWitness,
+                baseTokenAmount,
+                quoteTokenAmount,
+            )
+
+            proof.verify()
+        } catch {
+            // it's failed like expected
+        }
     })
 
     it("can add liquidty to a pool", async () => {
@@ -347,6 +458,106 @@ describe("Program", async () => {
             liquidity,
             liquidityWitness,
             lpTokensToBurn,
+        )
+
+        proof.verify()
+    })
+
+    it("can buy base token of a pool", async () => {
+        const baseTokenBalance = utils.getBalanceThenTest(
+            storage,
+            berzanAddress,
+            minaTokenId,
+        )
+        const quoteTokenBalance = utils.getBalanceThenTest(
+            storage,
+            berzanAddress,
+            usdcTokenId,
+        )
+
+        const pool = utils.getPoolThenTest(storage, minaTokenId, usdcTokenId)
+
+        const poolWitness = utils.getPoolWitnessThenTest(
+            storage,
+            minaTokenId,
+            usdcTokenId,
+        )
+
+        const baseTokensToBuy = UInt64.from(132n)
+        const maxQuoteTokensToPay = UInt64.from(132n)
+
+        const signature = Signature.create(berzanSecretKey, [
+            ...storage.state.toFields(),
+            ...baseTokenBalance.toFields(),
+            ...quoteTokenBalance.toFields(),
+            // ...balancePairWitness.toFields(), (todo: make a merkle witness for a pair of leaves)
+            ...pool.toFields(),
+            ...poolWitness.toFields(),
+            ...baseTokensToBuy.toFields(),
+            ...maxQuoteTokensToPay.toFields(),
+        ])
+
+        const proof = await RollupProgram.buy(
+            storage.state,
+            berzanAddress,
+            signature,
+            baseTokenBalance,
+            quoteTokenBalance,
+            // balancePairWitness (todo: make a merkle witness for a pair of leaves)
+            pool,
+            poolWitness,
+            baseTokensToBuy,
+            maxQuoteTokensToPay,
+        )
+
+        proof.verify()
+    })
+
+    it("can sell base token of a pool", async () => {
+        const baseTokenBalance = utils.getBalanceThenTest(
+            storage,
+            berzanAddress,
+            minaTokenId,
+        )
+        const quoteTokenBalance = utils.getBalanceThenTest(
+            storage,
+            berzanAddress,
+            usdcTokenId,
+        )
+
+        const pool = utils.getPoolThenTest(storage, minaTokenId, usdcTokenId)
+
+        const poolWitness = utils.getPoolWitnessThenTest(
+            storage,
+            minaTokenId,
+            usdcTokenId,
+        )
+
+        const baseTokensToSell = UInt64.from(132n)
+        const minQuoteTokensToReceive = UInt64.from(132n)
+
+        const signature = Signature.create(berzanSecretKey, [
+            ...storage.state.toFields(),
+            ...baseTokenBalance.toFields(),
+            ...quoteTokenBalance.toFields(),
+            // ...balancePairWitness.toFields(), (todo: make a merkle witness for a pair of leaves)
+            ...pool.toFields(),
+            ...poolWitness.toFields(),
+            ...baseTokensToSell.toFields(),
+            ...minQuoteTokensToReceive.toFields(),
+        ])
+
+        const proof = await RollupProgram.sell(
+            storage.state,
+            berzanAddress,
+            signature,
+            baseTokenBalance,
+            quoteTokenBalance,
+            // balancePairWitness (todo: make a merkle witness for a pair of leaves)
+            pool,
+            poolWitness,
+            baseTokensToSell,
+            minQuoteTokensToReceive,
         )
 
         proof.verify()
