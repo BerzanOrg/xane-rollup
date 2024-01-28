@@ -11,9 +11,16 @@ export default defineConfig({
             },
             sidebar: [
                 {
-                    label: "Docs V1",
-                    collapsed: false,
-                    autogenerate: { directory: "docs-v1" },
+                    label: "Introduction To Xane",
+                    link: "/introduction",
+                },
+                {
+                    label: "Project Structure",
+                    link: "/structure",
+                },
+                {
+                    label: "Project Management",
+                    link: "/management",
                 },
             ],
         }),
