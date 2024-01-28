@@ -1,5 +1,7 @@
 # Xane Rollup
 
+> Visit https://docs.xane.berzan.org/ for more info.
+
 This repository contains the source code of Xane, a rollup on top of [Mina Protocol](https://minaprotocol.com/) with its own AMM.
 
 This project is licensed under [GPL](https://www.gnu.org/licenses/gpl-3.0.en.html).
