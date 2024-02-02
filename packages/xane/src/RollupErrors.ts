@@ -1,4 +1,4 @@
-export enum RollupErrors {
+export enum Errors {
     BalanceNotFound = "balance is not found",
     BalanceExists = "balance already exists",
     OrderNotFound = "order is not found",
@@ -8,4 +8,13 @@ export enum RollupErrors {
     LiqudityNotFound = "liquidity is not found",
     LiqudityExists = "liquidity already exists",
     CallerSignatureNotValid = "caller signature is not valid",
+    InvalidCalculatedRoot = "invalid calculated root",
+    InsufficientBalance = "insufficient balance",
+    NonEmptyStruct = "non empty struct",
+    SameTokenIds = "same token ids",
+    InvalidTokenIds = "invalid token ids",
+    MistakenOwner = "balance owner is not sender",
+    MistakenProvider = "liquidity provider is not sender",
+    LimitIsLow = "limit is low",
+    InvalidSignature = "invalid signature",
 }

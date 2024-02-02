@@ -1,9 +1,9 @@
 import { Field, MerkleTree, MerkleWitness, Poseidon, PublicKey } from "o1js"
-import { RollupErrors } from "./RollupErrors.js"
+import { Errors } from "./RollupErrors.js"
 import { Liquidity } from "./Structs.js"
 
 // Change the type of `Error` to provide error messagees in a type-safe way.
-declare function Error(msg: `${RollupErrors}`): Error
+declare function Error(msg: `${Errors}`): Error
 
 /**
  * Height of the merkle tree that stores users' liquidities.

@@ -1,9 +1,9 @@
 import { Field, MerkleTree, MerkleWitness, Poseidon, PublicKey } from "o1js"
-import { RollupErrors } from "./RollupErrors.js"
+import { Errors } from "./RollupErrors.js"
 import { Balance } from "./Structs.js"
 
 // Change the type of `Error` to provide error messagees in a type-safe way.
-declare function Error(msg: `${RollupErrors}`): Error
+declare function Error(msg: `${Errors}`): Error
 
 /**
  * Height of the merkle tree that stores user balance entries.
@@ -76,7 +76,7 @@ export class StorageForBalances {
      */
     public getWitness(params: {
         tokenId: Field
-        address: PublicKey
+        owner: PublicKey
     }): BalanceWitness | Error {
         const index = this.innerArray.findIndex((balance) => balance.matches(params))
 
@@ -125,7 +125,7 @@ export class StorageForBalances {
      *
      * Returns an error if a balance with the same token ID and address is not found.
      */
-    public get(params: { tokenId: Field; address: PublicKey }): Balance | Error {
+    public get(params: { tokenId: Field; owner: PublicKey }): Balance | Error {
         const balance = this.innerArray.find((balance) => balance.matches(params))
 
         return balance || Error("balance is not found")

@@ -5,7 +5,7 @@ import { Bool, Field, PublicKey, Struct, UInt64 } from "o1js"
  */
 export class Balance extends Struct({
     tokenId: Field,
-    address: PublicKey,
+    owner: PublicKey,
     amount: UInt64,
 }) {
     /**
@@ -14,7 +14,7 @@ export class Balance extends Struct({
     public static empty(): Balance {
         return new Balance({
             tokenId: Field.empty(),
-            address: PublicKey.empty(),
+            owner: PublicKey.empty(),
             amount: UInt64.empty(),
         })
     }
@@ -25,7 +25,7 @@ export class Balance extends Struct({
     public isEmpty(): Bool {
         return Bool(true)
             .and(this.tokenId.equals(Field.empty()))
-            .and(this.address.equals(PublicKey.empty()))
+            .and(this.owner.equals(PublicKey.empty()))
             .and(this.amount.equals(UInt64.empty()))
     }
 
@@ -35,20 +35,20 @@ export class Balance extends Struct({
     public toFields(): Array<Field> {
         return [
             ...this.tokenId.toFields(),
-            ...this.address.toFields(),
+            ...this.owner.toFields(),
             ...this.amount.toFields(),
         ]
     }
 
     /**
-     *  Returns `true`, if given token ID and address matches the `Balance`'s.
+     *  Returns `true`, if given token ID and owner matches the `Balance`'s.
      *
      *  Otherwise, returns `false`.
      */
-    public matches(other: { tokenId: Field; address: PublicKey }): boolean {
+    public matches(other: { tokenId: Field; owner: PublicKey }): boolean {
         return Bool(true)
             .and(this.tokenId.equals(other.tokenId))
-            .and(this.address.equals(other.address))
+            .and(this.owner.equals(other.owner))
             .toBoolean()
     }
 }
@@ -59,7 +59,7 @@ export class Balance extends Struct({
 export class Liquidity extends Struct({
     baseTokenId: Field,
     quoteTokenId: Field,
-    lpTokenAmount: UInt64,
+    lpPoints: UInt64,
     provider: PublicKey,
 }) {
     /**
@@ -69,7 +69,7 @@ export class Liquidity extends Struct({
         return new Liquidity({
             baseTokenId: Field.empty(),
             quoteTokenId: Field.empty(),
-            lpTokenAmount: UInt64.empty(),
+            lpPoints: UInt64.empty(),
             provider: PublicKey.empty(),
         })
     }
@@ -81,7 +81,7 @@ export class Liquidity extends Struct({
         return [
             ...this.baseTokenId.toFields(),
             ...this.quoteTokenId.toFields(),
-            ...this.lpTokenAmount.toFields(),
+            ...this.lpPoints.toFields(),
             ...this.provider.toFields(),
         ]
     }
@@ -93,7 +93,7 @@ export class Liquidity extends Struct({
         return Bool(true)
             .and(this.baseTokenId.equals(Field.empty()))
             .and(this.quoteTokenId.equals(Field.empty()))
-            .and(this.lpTokenAmount.equals(UInt64.empty()))
+            .and(this.lpPoints.equals(UInt64.empty()))
             .and(this.provider.equals(PublicKey.empty()))
     }
 
@@ -154,7 +154,7 @@ export class Pool extends Struct({
     baseTokenAmount: UInt64,
     quoteTokenAmount: UInt64,
     k: UInt64,
-    lpTokensSupply: UInt64,
+    lpPoints: UInt64,
 }) {
     /**
      * Creates an empty `Pool` with all the properties initialized to empty values.
@@ -166,7 +166,7 @@ export class Pool extends Struct({
             baseTokenAmount: UInt64.empty(),
             quoteTokenAmount: UInt64.empty(),
             k: UInt64.empty(),
-            lpTokensSupply: UInt64.empty(),
+            lpPoints: UInt64.empty(),
         })
     }
 
@@ -180,7 +180,7 @@ export class Pool extends Struct({
             ...this.baseTokenAmount.toFields(),
             ...this.quoteTokenAmount.toFields(),
             ...this.k.toFields(),
-            ...this.lpTokensSupply.toFields(),
+            ...this.lpPoints.toFields(),
         ]
     }
 
@@ -194,7 +194,7 @@ export class Pool extends Struct({
             .and(this.baseTokenAmount.equals(UInt64.empty()))
             .and(this.quoteTokenAmount.equals(UInt64.empty()))
             .and(this.k.equals(UInt64.empty()))
-            .and(this.lpTokensSupply.equals(UInt64.empty()))
+            .and(this.lpPoints.equals(UInt64.empty()))
     }
 
     /**
