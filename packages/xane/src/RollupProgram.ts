@@ -1,10 +1,9 @@
-import { Field, Poseidon, Provable, PublicKey, Signature, UInt64, ZkProgram } from "o1js"
+import { Field, Poseidon, PublicKey, Signature, UInt64, ZkProgram } from "o1js"
 import { PoolWitness } from "./StorageForPools.js"
 import { LiqudityWitness } from "./StorageForLiquidities.js"
 import { Balance, Liquidity, Pool } from "./Structs.js"
 import { RollupState } from "./RollupState.js"
 import { BalanceWitness } from "./StorageForBalances.js"
-import { Errors } from "./RollupErrors.js"
 
 /**
  * The off-chain zk-program of the rollup that generates prooves.
@@ -15,6 +14,13 @@ export const RollupProgram = ZkProgram({
     publicInput: RollupState,
 
     methods: {
+        dumbMethod: {
+            privateInputs: [PublicKey, Signature],
+            method(rollupState: RollupState, sender: PublicKey, signature: Signature) {
+                const message: Array<Field> = []
+                signature.verify(sender, message).assertTrue()
+            },
+        },
         addBalanceV2: {
             privateInputs: [UInt64, Balance, BalanceWitness],
             method(
@@ -23,20 +29,6 @@ export const RollupProgram = ZkProgram({
                 balance: Balance,
                 balanceWitness: BalanceWitness,
             ) {
-                // Calculates root using given data.
-                const calculatedBalancesRoot = Provable.if(
-                    balance.amount.equals(UInt64.zero),
-                    balanceWitness.calculateRoot(Field.empty()),
-                    balanceWitness.calculateRoot(Poseidon.hash(balance.toFields())),
-                )
-
-                // Requires calculated root to be valid.
-                rollupState.balancesRoot.assertEquals(
-                    calculatedBalancesRoot,
-                    Errors.InvalidCalculatedRoot,
-                )
-
-                // Adds amount to balance.
                 rollupState.addBalance({
                     amount,
                     balance,
@@ -52,20 +44,6 @@ export const RollupProgram = ZkProgram({
                 balance: Balance,
                 balanceWitness: BalanceWitness,
             ) {
-                // Calculates root using given data.
-                const calculatedBalancesRoot = Provable.if(
-                    balance.amount.equals(UInt64.zero),
-                    balanceWitness.calculateRoot(Field.empty()),
-                    balanceWitness.calculateRoot(Poseidon.hash(balance.toFields())),
-                )
-
-                // Requires calculated root to be valid.
-                rollupState.balancesRoot.assertEquals(
-                    calculatedBalancesRoot,
-                    Errors.InvalidCalculatedRoot,
-                )
-
-                // Subtracts amount from balance.
                 rollupState.subBalance({
                     amount,
                     balance,
@@ -99,67 +77,16 @@ export const RollupProgram = ZkProgram({
                 poolWitness: PoolWitness,
                 liquidityWitness: LiqudityWitness,
             ) {
-                // Requires signature to be valid.
-                const message = [
-                    ...rollupState.toFields(),
-                    ...baseTokenAmount.toFields(),
-                    ...quoteTokenAmount.toFields(),
-                    ...baseTokenBalance.toFields(),
-                    ...quoteTokenBalance.toFields(),
-                    ...poolWitness.toFields(),
-                    ...liquidityWitness.toFields(),
-                ]
-                signature.verify(sender, message).assertTrue(Errors.InvalidSignature)
-
-                // Calculates roots using given data.
-                const calculatedPoolsRoot = poolWitness.calculateRoot(Field.empty())
-                const calculatedLiquiditiesRoot = liquidityWitness.calculateRoot(
-                    Field.empty(),
-                )
-
-                // Requires calculated root to be valid.
-                rollupState.poolsRoot.assertEquals(
-                    calculatedPoolsRoot,
-                    Errors.InvalidCalculatedRoot,
-                )
-                rollupState.liquiditiesRoot.assertEquals(
-                    calculatedLiquiditiesRoot,
-                    Errors.InvalidCalculatedRoot,
-                )
-
-                // Requires balances to be enough.
-                baseTokenBalance.amount.assertGreaterThanOrEqual(
-                    baseTokenAmount,
-                    Errors.InsufficientBalance,
-                )
-                quoteTokenBalance.amount.assertGreaterThanOrEqual(
-                    quoteTokenAmount,
-                    Errors.InsufficientBalance,
-                )
-
-                // Requires base and quote tokens not to be same.
-                baseTokenBalance.tokenId.assertNotEquals(
-                    quoteTokenBalance.tokenId,
-                    Errors.SameTokenIds,
-                )
-
-                // Requires balances to be owned by sender.
-                baseTokenBalance.owner.assertEquals(sender)
-                quoteTokenBalance.owner.assertEquals(sender)
-
-                // Requires pool and liquidity to be empty.
-                emptyPool.isEmpty().assertTrue(Errors.NonEmptyStruct)
-                emptyLiquidity.isEmpty().assertTrue(Errors.NonEmptyStruct)
-
-                // Subtracts amount from balance.
                 rollupState.createPool({
+                    sender,
+                    signature,
                     baseTokenAmount,
                     quoteTokenAmount,
                     baseTokenBalance,
                     quoteTokenBalance,
                     emptyPool,
-                    poolWitness,
                     emptyLiquidity,
+                    poolWitness,
                     liquidityWitness,
                 })
             },
@@ -182,7 +109,7 @@ export const RollupProgram = ZkProgram({
                 sender: PublicKey,
                 signature: Signature,
                 baseTokenAmount: UInt64,
-                quoteTokenAmountLimit: UInt64,
+                quoteTokenAmountMaxLimit: UInt64,
                 baseTokenBalance: Balance,
                 quoteTokenBalance: Balance,
                 pool: Pool,
@@ -190,83 +117,11 @@ export const RollupProgram = ZkProgram({
                 poolWitness: PoolWitness,
                 liquidityWitness: LiqudityWitness,
             ) {
-                // Requires signature to be valid.
-                const message = [
-                    ...rollupState.toFields(),
-                    ...baseTokenAmount.toFields(),
-                    ...quoteTokenAmountLimit.toFields(),
-                    ...baseTokenBalance.toFields(),
-                    ...quoteTokenBalance.toFields(),
-                    ...pool.toFields(),
-                    ...liquidity.toFields(),
-                    ...poolWitness.toFields(),
-                    ...liquidityWitness.toFields(),
-                ]
-                signature.verify(sender, message).assertTrue(Errors.InvalidSignature)
-
-                // Calculates quote token amount.
-                const quoteTokenAmount = pool.baseTokenAmount
-                    .add(baseTokenAmount)
-                    .mul(pool.quoteTokenAmount)
-                    .div(pool.baseTokenAmount)
-                    .sub(pool.quoteTokenAmount)
-
-                // Calculates roots using given data.
-                const calculatedPoolsRoot = poolWitness.calculateRoot(
-                    Poseidon.hash(pool.toFields()),
-                )
-                const calculatedLiquiditiesRoot = liquidityWitness.calculateRoot(
-                    Poseidon.hash(liquidity.toFields()),
-                )
-
-                // Requires calculated root to be valid.
-                rollupState.poolsRoot.assertEquals(
-                    calculatedPoolsRoot,
-                    Errors.InvalidCalculatedRoot,
-                )
-                rollupState.liquiditiesRoot.assertEquals(
-                    calculatedLiquiditiesRoot,
-                    Errors.InvalidCalculatedRoot,
-                )
-
-                // Requires balance owners to be sender.
-                baseTokenBalance.owner.equals(sender).assertTrue(Errors.MistakenOwner)
-                quoteTokenBalance.owner.equals(sender).assertTrue(Errors.MistakenOwner)
-
-                // Requires liquidity provider to be sender.
-                liquidity.provider.equals(sender).assertTrue(Errors.MistakenProvider)
-
-                // Requires balances to be enough.
-                baseTokenBalance.amount.assertGreaterThanOrEqual(baseTokenAmount)
-                quoteTokenBalance.amount.assertGreaterThanOrEqual(quoteTokenAmount)
-
-                // Requires quote token amount to be lower than limit.
-                quoteTokenAmount.assertLessThanOrEqual(
-                    quoteTokenAmountLimit,
-                    Errors.LimitIsLow,
-                )
-
-                // Requires base and quote token IDs to be valid.
-                pool.baseTokenId.assertEquals(
-                    baseTokenBalance.tokenId,
-                    Errors.InvalidTokenIds,
-                )
-                pool.quoteTokenId.assertEquals(
-                    quoteTokenBalance.tokenId,
-                    Errors.InvalidTokenIds,
-                )
-                liquidity.baseTokenId.assertEquals(
-                    baseTokenBalance.tokenId,
-                    Errors.InvalidTokenIds,
-                )
-                liquidity.quoteTokenId.assertEquals(
-                    quoteTokenBalance.tokenId,
-                    Errors.InvalidTokenIds,
-                )
-
-                // Adds liquidity.
                 rollupState.addLiquidity({
+                    sender,
+                    signature,
                     baseTokenAmount,
+                    quoteTokenAmountMaxLimit,
                     baseTokenBalance,
                     quoteTokenBalance,
                     pool,
@@ -295,8 +150,8 @@ export const RollupProgram = ZkProgram({
                 sender: PublicKey,
                 signature: Signature,
                 lpPoints: UInt64,
-                baseTokenAmountLimit: UInt64,
-                quoteTokenAmountLimit: UInt64,
+                baseTokenAmountMinLimit: UInt64,
+                quoteTokenAmountMinLimit: UInt64,
                 baseTokenBalance: Balance,
                 quoteTokenBalance: Balance,
                 pool: Pool,
@@ -304,95 +159,86 @@ export const RollupProgram = ZkProgram({
                 poolWitness: PoolWitness,
                 liquidityWitness: LiqudityWitness,
             ) {
-                // Requires signature to be valid.
-                const message = [
-                    ...rollupState.toFields(),
-                    ...lpPoints.toFields(),
-                    ...baseTokenAmountLimit.toFields(),
-                    ...quoteTokenAmountLimit.toFields(),
-                    ...baseTokenBalance.toFields(),
-                    ...quoteTokenBalance.toFields(),
-                    ...pool.toFields(),
-                    ...liquidity.toFields(),
-                    ...poolWitness.toFields(),
-                    ...liquidityWitness.toFields(),
-                ]
-                signature.verify(sender, message).assertTrue(Errors.InvalidSignature)
-
-                // Calculates base & quote token amounts.
-                const baseTokenAmount = lpPoints
-                    .mul(pool.baseTokenAmount)
-                    .div(pool.lpPoints)
-                const quoteTokenAmount = lpPoints
-                    .mul(pool.quoteTokenAmount)
-                    .div(pool.lpPoints)
-
-                // Calculates roots using given data.
-                const calculatedPoolsRoot = poolWitness.calculateRoot(
-                    Poseidon.hash(pool.toFields()),
-                )
-                const calculatedLiquiditiesRoot = liquidityWitness.calculateRoot(
-                    Poseidon.hash(liquidity.toFields()),
-                )
-
-                // Requires calculated root to be valid.
-                rollupState.poolsRoot.assertEquals(
-                    calculatedPoolsRoot,
-                    Errors.InvalidCalculatedRoot,
-                )
-                rollupState.liquiditiesRoot.assertEquals(
-                    calculatedLiquiditiesRoot,
-                    Errors.InvalidCalculatedRoot,
-                )
-
-                // Requires balance owners to be sender.
-                baseTokenBalance.owner.equals(sender).assertTrue(Errors.MistakenOwner)
-                quoteTokenBalance.owner.equals(sender).assertTrue(Errors.MistakenOwner)
-
-                // Requires liquidity provider to be sender.
-                liquidity.provider.equals(sender).assertTrue(Errors.MistakenProvider)
-
-                // Requires balances to be enough.
-                baseTokenBalance.amount.assertGreaterThanOrEqual(baseTokenAmount)
-                quoteTokenBalance.amount.assertGreaterThanOrEqual(quoteTokenAmount)
-
-                // Requires base & quote token amounts to be lower than limits.
-                baseTokenAmount.assertLessThanOrEqual(
-                    baseTokenAmountLimit,
-                    Errors.LimitIsLow,
-                )
-                quoteTokenAmount.assertLessThanOrEqual(
-                    quoteTokenAmountLimit,
-                    Errors.LimitIsLow,
-                )
-
-                // Requires base and quote token IDs to be valid.
-                pool.baseTokenId.assertEquals(
-                    baseTokenBalance.tokenId,
-                    Errors.InvalidTokenIds,
-                )
-                pool.quoteTokenId.assertEquals(
-                    quoteTokenBalance.tokenId,
-                    Errors.InvalidTokenIds,
-                )
-                liquidity.baseTokenId.assertEquals(
-                    baseTokenBalance.tokenId,
-                    Errors.InvalidTokenIds,
-                )
-                liquidity.quoteTokenId.assertEquals(
-                    quoteTokenBalance.tokenId,
-                    Errors.InvalidTokenIds,
-                )
-
-                // Removes liquidity.
                 rollupState.removeLiquidity({
+                    sender,
+                    signature,
                     lpPoints,
+                    baseTokenAmountMinLimit,
+                    quoteTokenAmountMinLimit,
                     baseTokenBalance,
                     quoteTokenBalance,
                     pool,
                     liquidity,
                     poolWitness,
                     liquidityWitness,
+                })
+            },
+        },
+        buyV2: {
+            privateInputs: [
+                PublicKey,
+                Signature,
+                UInt64,
+                UInt64,
+                Balance,
+                Balance,
+                Pool,
+                PoolWitness,
+            ],
+            method(
+                rollupState: RollupState,
+                sender: PublicKey,
+                signature: Signature,
+                baseTokenAmount: UInt64,
+                quoteTokenAmountMaxLimit: UInt64,
+                baseTokenBalance: Balance,
+                quoteTokenBalance: Balance,
+                pool: Pool,
+                poolWitness: PoolWitness,
+            ) {
+                rollupState.buy({
+                    sender,
+                    signature,
+                    baseTokenAmount,
+                    quoteTokenAmountMaxLimit,
+                    baseTokenBalance,
+                    quoteTokenBalance,
+                    pool,
+                    poolWitness,
+                })
+            },
+        },
+        sellV2: {
+            privateInputs: [
+                PublicKey,
+                Signature,
+                UInt64,
+                UInt64,
+                Balance,
+                Balance,
+                Pool,
+                PoolWitness,
+            ],
+            method(
+                rollupState: RollupState,
+                sender: PublicKey,
+                signature: Signature,
+                baseTokenAmount: UInt64,
+                quoteTokenAmountMinLimit: UInt64,
+                baseTokenBalance: Balance,
+                quoteTokenBalance: Balance,
+                pool: Pool,
+                poolWitness: PoolWitness,
+            ) {
+                rollupState.sell({
+                    sender,
+                    signature,
+                    baseTokenAmount,
+                    quoteTokenAmountMinLimit,
+                    baseTokenBalance,
+                    quoteTokenBalance,
+                    pool,
+                    poolWitness,
                 })
             },
         },

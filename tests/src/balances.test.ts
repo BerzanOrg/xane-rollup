@@ -19,7 +19,7 @@ describe("Balances", async () => {
     // the initial balance
     const initialBalance = new Balance({
         tokenId,
-        address,
+        owner: address,
         amount: new UInt64(1_000_000n),
     })
 
@@ -33,7 +33,7 @@ describe("Balances", async () => {
 
         const res2 = storage.balances.get({
             tokenId,
-            address,
+            owner: address,
         })
 
         if (res2 instanceof Error) {
@@ -52,7 +52,7 @@ describe("Balances", async () => {
     it("can update the balance of a user", async () => {
         const res1 = storage.balances.get({
             tokenId,
-            address,
+            owner: address,
         })
 
         if (res1 instanceof Error) {
@@ -68,7 +68,7 @@ describe("Balances", async () => {
 
         const res2 = storage.balances.get({
             tokenId,
-            address,
+            owner: address,
         })
 
         if (res2 instanceof Error) {
@@ -83,7 +83,7 @@ describe("Balances", async () => {
 
         const res1 = storage.balances.get({
             tokenId,
-            address: randomAddress,
+            owner: randomAddress,
         })
 
         assert.deepEqual((res1 as Error).message, RollupErrors.BalanceNotFound)

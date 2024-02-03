@@ -24,7 +24,7 @@ describe("Liquidities", async () => {
         baseTokenId,
         quoteTokenId,
         provider,
-        lpTokenAmount: new UInt64(21_000_000n),
+        lpPoints: new UInt64(21_000_000n),
     })
 
     it("can store the liquidity of a user for a specific token pair", async () => {
@@ -67,9 +67,9 @@ describe("Liquidities", async () => {
 
         assert.deepEqual(res1, initialLiquidity)
 
-        const newLiquidityLpTokenAmount = res1.lpTokenAmount.add(new UInt64(83_000n))
+        const newLiquidityLpTokenAmount = res1.lpPoints.add(new UInt64(83_000n))
 
-        initialLiquidity.lpTokenAmount = newLiquidityLpTokenAmount
+        initialLiquidity.lpPoints = newLiquidityLpTokenAmount
         storage.updateState()
 
         const res2 = storage.liquidities.get({
@@ -82,7 +82,7 @@ describe("Liquidities", async () => {
             assert.fail(res2)
         }
 
-        assert.deepEqual(res2.lpTokenAmount, newLiquidityLpTokenAmount)
+        assert.deepEqual(res2.lpPoints, newLiquidityLpTokenAmount)
     })
 
     it("can't update the liquidity of a user for a specific token pair, if it isn't stored", async () => {

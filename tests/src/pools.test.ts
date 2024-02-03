@@ -23,7 +23,7 @@ describe("Pools", async () => {
     const k = baseTokenAmount.mul(quoteTokenAmount)
 
     // LP tokens initial supply is `uint16_max` which is `65535`.
-    const lpTokensSupply = new UInt64(65535)
+    const lpPoints = new UInt64(65535)
 
     // the initial pool
     const initialPool = new Pool({
@@ -32,7 +32,7 @@ describe("Pools", async () => {
         baseTokenAmount,
         quoteTokenAmount,
         k,
-        lpTokensSupply,
+        lpPoints,
     })
 
     it("can store the pool of a specific pair", async () => {
@@ -82,13 +82,13 @@ describe("Pools", async () => {
         const kNew = baseTokenAmountNew.mul(quoteTokenAmountNew)
 
         const lpTokensSupplyNew = baseTokenAmountNew
-            .mul(res1.lpTokensSupply)
+            .mul(res1.lpPoints)
             .div(res1.baseTokenAmount)
 
         initialPool.baseTokenAmount = baseTokenAmountNew
         initialPool.quoteTokenAmount = quoteTokenAmountNew
         initialPool.k = kNew
-        initialPool.lpTokensSupply = lpTokensSupplyNew
+        initialPool.lpPoints = lpTokensSupplyNew
         storage.updateState()
 
         const res2 = storage.pools.get({
@@ -103,7 +103,7 @@ describe("Pools", async () => {
         assert.deepEqual(res2.baseTokenAmount, baseTokenAmountNew)
         assert.deepEqual(res2.quoteTokenAmount, quoteTokenAmountNew)
         assert.deepEqual(res2.k, kNew)
-        assert.deepEqual(res2.lpTokensSupply, lpTokensSupplyNew)
+        assert.deepEqual(res2.lpPoints, lpTokensSupplyNew)
     })
 
     it("can't update the pool of a specific pair, if it isn't stored", async () => {

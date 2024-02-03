@@ -14,7 +14,7 @@ const utils = {
 
         const res2 = storage.balances.get({
             tokenId: initialBalance.tokenId,
-            address: initialBalance.address,
+            owner: initialBalance.owner,
         })
 
         if (res2 instanceof Error) {
@@ -26,7 +26,7 @@ const utils = {
     getBalanceThenTest: (storage: RollupStorage, address: PublicKey, tokenId: Field) => {
         const res1 = storage.balances.get({
             tokenId,
-            address,
+            owner: address,
         })
 
         if (res1 instanceof Error) {
@@ -141,28 +141,28 @@ describe("Program", async () => {
         // the initial MINA balance of Berzan for testing
         const berzanInitialMinaBalance = new Balance({
             tokenId: minaTokenId,
-            address: berzanAddress,
+            owner: berzanAddress,
             amount: new UInt64(100_000n).mul(decimals),
         })
 
         // the initial MINA balance of John for testing
         const johnInitialMinaBalance = new Balance({
             tokenId: minaTokenId,
-            address: johnAddress,
+            owner: johnAddress,
             amount: new UInt64(1_000_000n),
         })
 
         // the initial USDC balance of Berzan for testing
         const berzanInitialUsdcBalance = new Balance({
             tokenId: usdcTokenId,
-            address: berzanAddress,
+            owner: berzanAddress,
             amount: new UInt64(1_000_000n),
         })
 
         // the initial USDC balance of John for testing
         const johnInitialUsdcBalance = new Balance({
             tokenId: usdcTokenId,
-            address: johnAddress,
+            owner: johnAddress,
             amount: new UInt64(1_000_000n),
         })
 
