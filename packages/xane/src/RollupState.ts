@@ -9,7 +9,7 @@ import {
     UInt64,
 } from "o1js"
 import { Balance, Liquidity, Pool } from "./Structs.js"
-import { BalanceWitness } from "./StorageForBalances.js"
+import { BalanceDoubleWitness, BalanceWitness } from "./StorageForBalances.js"
 import { PoolWitness } from "./StorageForPools.js"
 import { LiqudityWitness } from "./StorageForLiquidities.js"
 import { Errors } from "./RollupErrors.js"
@@ -107,10 +107,15 @@ export class RollupState extends Struct({
         quoteTokenBalance,
         emptyPool,
         emptyLiquidity,
+        balanceDoubleWitness,
         poolWitness,
         liquidityWitness,
     }: CreatePool) {
         // Defines variables.
+        const calculatedBalancesRoot = balanceDoubleWitness.calculateRoot(
+            Poseidon.hash(baseTokenBalance.toFields()),
+            Poseidon.hash(quoteTokenBalance.toFields()),
+        )
         const calculatedPoolsRoot = poolWitness.calculateRoot(Field.empty())
         const calculatedLiquiditiesRoot = liquidityWitness.calculateRoot(Field.empty())
         const message = [
@@ -130,6 +135,7 @@ export class RollupState extends Struct({
 
         // Requires roots to be valid.
         Bool(true)
+            .and(this.balancesRoot.equals(calculatedBalancesRoot))
             .and(this.poolsRoot.equals(calculatedPoolsRoot))
             .and(this.liquiditiesRoot.equals(calculatedLiquiditiesRoot))
             .assertTrue(Errors.InvalidCalculatedRoot)
@@ -192,6 +198,7 @@ export class RollupState extends Struct({
         quoteTokenBalance,
         pool,
         liquidity,
+        balanceDoubleWitness,
         poolWitness,
         liquidityWitness,
     }: AddLiquidity) {
@@ -205,6 +212,10 @@ export class RollupState extends Struct({
             .mul(pool.quoteTokenAmount)
             .div(pool.baseTokenAmount)
             .sub(pool.quoteTokenAmount)
+        const calculatedBalancesRoot = balanceDoubleWitness.calculateRoot(
+            Poseidon.hash(baseTokenBalance.toFields()),
+            Poseidon.hash(quoteTokenBalance.toFields()),
+        )
         const calculatedPoolsRoot = poolWitness.calculateRoot(
             Poseidon.hash(pool.toFields()),
         )
@@ -232,6 +243,7 @@ export class RollupState extends Struct({
 
         // Requires roots to be valid.
         Bool(true)
+            .and(this.balancesRoot.equals(calculatedBalancesRoot))
             .and(this.poolsRoot.equals(calculatedPoolsRoot))
             .and(this.liquiditiesRoot.equals(calculatedLiquiditiesRoot))
             .assertTrue(Errors.InvalidCalculatedRoot)
@@ -318,12 +330,17 @@ export class RollupState extends Struct({
         quoteTokenBalance,
         pool,
         liquidity,
+        balanceDoubleWitness,
         poolWitness,
         liquidityWitness,
     }: RemoveLiquidity) {
         // Defines variables.
         const baseTokenAmount = lpPoints.mul(pool.baseTokenAmount).div(pool.lpPoints)
         const quoteTokenAmount = lpPoints.mul(pool.quoteTokenAmount).div(pool.lpPoints)
+        const calculatedBalancesRoot = balanceDoubleWitness.calculateRoot(
+            Poseidon.hash(baseTokenBalance.toFields()),
+            Poseidon.hash(quoteTokenBalance.toFields()),
+        )
         const calculatedPoolsRoot = poolWitness.calculateRoot(
             Poseidon.hash(pool.toFields()),
         )
@@ -350,6 +367,7 @@ export class RollupState extends Struct({
 
         // Requires roots to be valid.
         Bool(true)
+            .and(this.balancesRoot.equals(calculatedBalancesRoot))
             .and(this.poolsRoot.equals(calculatedPoolsRoot))
             .and(this.liquiditiesRoot.equals(calculatedLiquiditiesRoot))
             .assertTrue(Errors.InvalidCalculatedRoot)
@@ -418,12 +436,17 @@ export class RollupState extends Struct({
         baseTokenBalance,
         quoteTokenBalance,
         pool,
+        balanceDoubleWitness,
         poolWitness,
     }: Buy) {
         // Defines variables.
         const newBaseTokenAmount = pool.baseTokenAmount.sub(baseTokenAmount)
         const newQuoteTokenAmount = pool.k.div(newBaseTokenAmount)
         const quoteTokenAmount = newQuoteTokenAmount.sub(pool.quoteTokenAmount)
+        const calculatedBalancesRoot = balanceDoubleWitness.calculateRoot(
+            Poseidon.hash(baseTokenBalance.toFields()),
+            Poseidon.hash(quoteTokenBalance.toFields()),
+        )
         const calculatedPoolsRoot = poolWitness.calculateRoot(
             Poseidon.hash(pool.toFields()),
         )
@@ -442,8 +465,9 @@ export class RollupState extends Struct({
             .and(signature.verify(sender, message))
             .assertTrue(Errors.InvalidSignature)
 
-        // Requires root to be valid.
+        // Requires roots to be valid.
         Bool(true)
+            .and(this.balancesRoot.equals(calculatedBalancesRoot))
             .and(this.poolsRoot.equals(calculatedPoolsRoot))
             .assertTrue(Errors.InvalidCalculatedRoot)
 
@@ -495,12 +519,17 @@ export class RollupState extends Struct({
         baseTokenBalance,
         quoteTokenBalance,
         pool,
+        balanceDoubleWitness,
         poolWitness,
     }: Sell) {
         // Defines variables.
         const newBaseTokenAmount = pool.baseTokenAmount.add(baseTokenAmount)
         const newQuoteTokenAmount = pool.k.div(newBaseTokenAmount)
         const quoteTokenAmount = pool.quoteTokenAmount.sub(newQuoteTokenAmount)
+        const calculatedBalancesRoot = balanceDoubleWitness.calculateRoot(
+            Poseidon.hash(baseTokenBalance.toFields()),
+            Poseidon.hash(quoteTokenBalance.toFields()),
+        )
         const calculatedPoolsRoot = poolWitness.calculateRoot(
             Poseidon.hash(pool.toFields()),
         )
@@ -519,8 +548,9 @@ export class RollupState extends Struct({
             .and(signature.verify(sender, message))
             .assertTrue(Errors.InvalidSignature)
 
-        // Requires root to be valid.
+        // Requires roots to be valid.
         Bool(true)
+            .and(this.balancesRoot.equals(calculatedBalancesRoot))
             .and(this.poolsRoot.equals(calculatedPoolsRoot))
             .assertTrue(Errors.InvalidCalculatedRoot)
 
@@ -583,6 +613,7 @@ interface CreatePool {
     quoteTokenBalance: Balance
     emptyPool: Pool
     emptyLiquidity: Liquidity
+    balanceDoubleWitness: BalanceDoubleWitness
     poolWitness: PoolWitness
     liquidityWitness: LiqudityWitness
 }
@@ -596,6 +627,7 @@ interface AddLiquidity {
     quoteTokenBalance: Balance
     pool: Pool
     liquidity: Liquidity
+    balanceDoubleWitness: BalanceDoubleWitness
     poolWitness: PoolWitness
     liquidityWitness: LiqudityWitness
 }
@@ -610,6 +642,7 @@ interface RemoveLiquidity {
     quoteTokenBalance: Balance
     pool: Pool
     liquidity: Liquidity
+    balanceDoubleWitness: BalanceDoubleWitness
     poolWitness: PoolWitness
     liquidityWitness: LiqudityWitness
 }
@@ -622,6 +655,7 @@ interface Buy {
     baseTokenBalance: Balance
     quoteTokenBalance: Balance
     pool: Pool
+    balanceDoubleWitness: BalanceDoubleWitness
     poolWitness: PoolWitness
 }
 
@@ -633,5 +667,6 @@ interface Sell {
     baseTokenBalance: Balance
     quoteTokenBalance: Balance
     pool: Pool
+    balanceDoubleWitness: BalanceDoubleWitness
     poolWitness: PoolWitness
 }

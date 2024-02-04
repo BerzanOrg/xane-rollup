@@ -1,6 +1,7 @@
 import { Field, MerkleTree, MerkleWitness, Poseidon, PublicKey } from "o1js"
 import { Errors } from "./RollupErrors.js"
 import { Balance } from "./Structs.js"
+import { MerkleDoubleWitness } from "./MerkleDoubleWitness.js"
 
 // Change the type of `Error` to provide error messagees in a type-safe way.
 declare function Error(msg: `${Errors}`): Error
@@ -14,6 +15,11 @@ export const BALANCES_TREE_HEIGHT = 5
  * Merkle witness for the merkle tree that stores user balance entries.
  */
 export class BalanceWitness extends MerkleWitness(BALANCES_TREE_HEIGHT) {}
+
+/**
+ * Merkle double witness for the merkle tree that stores user balance entries.
+ */
+export class BalanceDoubleWitness extends MerkleDoubleWitness(BALANCES_TREE_HEIGHT) {}
 
 /**
  * Stores user balance entries with an array and a merkle tree.

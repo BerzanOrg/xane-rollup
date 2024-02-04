@@ -10,3 +10,4 @@ export type { LiqudityWitness } from "./StorageForLiquidities.js"
 export type { RollupProof } from "./RollupProof.js"
 
 export { Balance, Liquidity, Pool } from "./Structs.js"
+export { MerkleDoubleWitness } from "./MerkleDoubleWitness.js"

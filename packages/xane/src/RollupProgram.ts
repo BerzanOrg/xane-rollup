@@ -3,7 +3,7 @@ import { PoolWitness } from "./StorageForPools.js"
 import { LiqudityWitness } from "./StorageForLiquidities.js"
 import { Balance, Liquidity, Pool } from "./Structs.js"
 import { RollupState } from "./RollupState.js"
-import { BalanceWitness } from "./StorageForBalances.js"
+import { BalanceDoubleWitness, BalanceWitness } from "./StorageForBalances.js"
 
 /**
  * The off-chain zk-program of the rollup that generates prooves.
@@ -61,6 +61,7 @@ export const RollupProgram = ZkProgram({
                 Balance,
                 Pool,
                 Liquidity,
+                BalanceDoubleWitness,
                 PoolWitness,
                 LiqudityWitness,
             ],
@@ -74,6 +75,7 @@ export const RollupProgram = ZkProgram({
                 quoteTokenBalance: Balance,
                 emptyPool: Pool,
                 emptyLiquidity: Liquidity,
+                balanceDoubleWitness: BalanceDoubleWitness,
                 poolWitness: PoolWitness,
                 liquidityWitness: LiqudityWitness,
             ) {
@@ -86,6 +88,7 @@ export const RollupProgram = ZkProgram({
                     quoteTokenBalance,
                     emptyPool,
                     emptyLiquidity,
+                    balanceDoubleWitness,
                     poolWitness,
                     liquidityWitness,
                 })
@@ -101,6 +104,7 @@ export const RollupProgram = ZkProgram({
                 Balance,
                 Pool,
                 Liquidity,
+                BalanceDoubleWitness,
                 PoolWitness,
                 LiqudityWitness,
             ],
@@ -114,6 +118,7 @@ export const RollupProgram = ZkProgram({
                 quoteTokenBalance: Balance,
                 pool: Pool,
                 liquidity: Liquidity,
+                balanceDoubleWitness: BalanceDoubleWitness,
                 poolWitness: PoolWitness,
                 liquidityWitness: LiqudityWitness,
             ) {
@@ -126,6 +131,7 @@ export const RollupProgram = ZkProgram({
                     quoteTokenBalance,
                     pool,
                     liquidity,
+                    balanceDoubleWitness,
                     poolWitness,
                     liquidityWitness,
                 })
@@ -142,6 +148,7 @@ export const RollupProgram = ZkProgram({
                 Balance,
                 Pool,
                 Liquidity,
+                BalanceDoubleWitness,
                 PoolWitness,
                 LiqudityWitness,
             ],
@@ -156,6 +163,7 @@ export const RollupProgram = ZkProgram({
                 quoteTokenBalance: Balance,
                 pool: Pool,
                 liquidity: Liquidity,
+                balanceDoubleWitness: BalanceDoubleWitness,
                 poolWitness: PoolWitness,
                 liquidityWitness: LiqudityWitness,
             ) {
@@ -169,6 +177,7 @@ export const RollupProgram = ZkProgram({
                     quoteTokenBalance,
                     pool,
                     liquidity,
+                    balanceDoubleWitness,
                     poolWitness,
                     liquidityWitness,
                 })
@@ -183,6 +192,7 @@ export const RollupProgram = ZkProgram({
                 Balance,
                 Balance,
                 Pool,
+                BalanceDoubleWitness,
                 PoolWitness,
             ],
             method(
@@ -194,6 +204,7 @@ export const RollupProgram = ZkProgram({
                 baseTokenBalance: Balance,
                 quoteTokenBalance: Balance,
                 pool: Pool,
+                balanceDoubleWitness: BalanceDoubleWitness,
                 poolWitness: PoolWitness,
             ) {
                 rollupState.buy({
@@ -204,6 +215,7 @@ export const RollupProgram = ZkProgram({
                     baseTokenBalance,
                     quoteTokenBalance,
                     pool,
+                    balanceDoubleWitness,
                     poolWitness,
                 })
             },
@@ -217,6 +229,7 @@ export const RollupProgram = ZkProgram({
                 Balance,
                 Balance,
                 Pool,
+                BalanceDoubleWitness,
                 PoolWitness,
             ],
             method(
@@ -228,6 +241,7 @@ export const RollupProgram = ZkProgram({
                 baseTokenBalance: Balance,
                 quoteTokenBalance: Balance,
                 pool: Pool,
+                balanceDoubleWitness: BalanceDoubleWitness,
                 poolWitness: PoolWitness,
             ) {
                 rollupState.sell({
@@ -238,6 +252,7 @@ export const RollupProgram = ZkProgram({
                     baseTokenBalance,
                     quoteTokenBalance,
                     pool,
+                    balanceDoubleWitness,
                     poolWitness,
                 })
             },
