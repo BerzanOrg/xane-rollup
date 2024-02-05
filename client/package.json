@@ -9,6 +9,7 @@
     },
     "dependencies": {
         "o1js": "^0.15.2",
+        "zod": "^3.22.4",
         "xane": "workspace:*"
     }
 }

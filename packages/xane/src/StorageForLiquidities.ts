@@ -135,4 +135,11 @@ export class StorageForLiquidities {
 
         return liquidity || Error("liquidity is not found")
     }
+
+    /**
+     *  Returns all the liquidities.
+     */
+    public getLiquidities(): Array<Liquidity> {
+        return this.innerArray
+    }
 }

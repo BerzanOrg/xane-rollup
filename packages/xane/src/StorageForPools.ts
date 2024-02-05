@@ -130,4 +130,11 @@ export class StorageForPools {
 
         return pool || Error("pool is not found")
     }
+
+    /**
+     *  Returns all the pools.
+     */
+    public getPools(): Array<Pool> {
+        return this.innerArray
+    }
 }

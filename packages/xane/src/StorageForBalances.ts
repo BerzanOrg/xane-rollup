@@ -136,4 +136,11 @@ export class StorageForBalances {
 
         return balance || Error("balance is not found")
     }
+
+    /**
+     *  Returns all the balances.
+     */
+    public getBalances(): Array<Balance> {
+        return this.innerArray
+    }
 }
