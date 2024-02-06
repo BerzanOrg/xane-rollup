@@ -1,3 +1,4 @@
+import assert from "node:assert"
 import { PrivateKey, UInt64 } from "o1js"
 
 export const utils = {
@@ -17,7 +18,19 @@ export const utils = {
             publicKey,
         }
     },
-    createNumber: (number: number, decimals: number) => {
+    createUInt64: (number: number, decimals: number) => {
         return UInt64.from(BigInt(number) * BigInt(10) ** BigInt(decimals))
+    },
+    unwrapValue: <R>(res: R | Error) => {
+        if (res instanceof Error) {
+            assert.fail(res)
+        }
+        return res
+    },
+    unwrapError: <R>(res: R | Error) => {
+        if (res instanceof Error) {
+            return res
+        }
+        assert.fail("supposed to be an error")
     },
 }

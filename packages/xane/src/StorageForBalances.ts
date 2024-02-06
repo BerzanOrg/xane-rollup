@@ -1,10 +1,10 @@
 import { Field, MerkleTree, MerkleWitness, Poseidon, PublicKey } from "o1js"
-import { Errors } from "./RollupErrors.js"
+import { StorageError } from "./RollupErrors.js"
 import { Balance } from "./Structs.js"
 import { MerkleDoubleWitness } from "./MerkleDoubleWitness.js"
 
 // Change the type of `Error` to provide error messagees in a type-safe way.
-declare function Error(msg: `${Errors}`): Error
+declare function Error(msg: `${StorageError}`): Error
 
 /**
  * Height of the merkle tree that stores user balance entries.
@@ -76,9 +76,9 @@ export class StorageForBalances {
     }
 
     /**
-     * Returns the merkle witness of the balance with the given token ID and address.
+     * Returns the merkle witness of the balance with the given token ID and owner.
      *
-     * Returns an error if a balance with the same token ID and address is not found.
+     * Returns an error if a balance with the same token ID and owner is not found.
      */
     public getWitness(params: {
         tokenId: Field
@@ -107,9 +107,35 @@ export class StorageForBalances {
     }
 
     /**
+     * Returns the merkle double witness of the balances with the given token IDs and owner.
+     *
+     * Returns an error if a balance with the same token IDs and owner is not found.
+     */
+    public getDoubleWitness(params: {
+        firstTokenId: Field
+        secondTokenId: Field
+        owner: PublicKey
+    }): BalanceDoubleWitness | Error {
+        const firstIndex = this.innerArray.findIndex((balance) =>
+            balance.matches({ tokenId: params.firstTokenId, owner: params.owner }),
+        )
+
+        const secondIndex = this.innerArray.findIndex((balance) =>
+            balance.matches({ tokenId: params.secondTokenId, owner: params.owner }),
+        )
+
+        if (firstIndex === -1 || secondIndex === -1) return Error("balance is not found")
+
+        const firstWitness = this.innerTree.getWitness(BigInt(firstIndex))
+        const secondWitness = this.innerTree.getWitness(BigInt(secondIndex))
+
+        return new BalanceDoubleWitness(firstWitness, secondWitness)
+    }
+
+    /**
      * Stores the given balance.
      *
-     * Returns an error if a balance with the same token ID and address already exists.
+     * Returns an error if a balance with the same token ID and owner already exists.
      */
     public store(balance: Balance): void | Error {
         const existingBalance = this.innerArray.find((bal) => balance.matches(bal))
@@ -127,9 +153,9 @@ export class StorageForBalances {
     }
 
     /**
-     * Returns the token with the given token ID balance of the given address.
+     * Returns the token with the given token ID balance of the given owner.
      *
-     * Returns an error if a balance with the same token ID and address is not found.
+     * Returns an error if a balance with the same token ID and owner is not found.
      */
     public get(params: { tokenId: Field; owner: PublicKey }): Balance | Error {
         const balance = this.innerArray.find((balance) => balance.matches(params))

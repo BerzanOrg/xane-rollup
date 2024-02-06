@@ -1,19 +1,4 @@
-export enum Errors {
-    BalanceNotFound = "balance is not found",
-    BalanceExists = "balance already exists",
-    OrderNotFound = "order is not found",
-    OrderExists = "order already exists",
-    PoolNotFound = "pool is not found",
-    PoolExists = "pool already exists",
-    LiqudityNotFound = "liquidity is not found",
-    LiqudityExists = "liquidity already exists",
-    CallerSignatureNotValid = "caller signature is not valid",
-    BalanceNotEnough = "balance not enough",
-    NonEmptyStruct = "non empty struct",
-    SameTokenIds = "same token ids",
-    MistakenOwner = "balance owner is not sender",
-    MistakenProvider = "liquidity provider is not sender",
-    LimitIsLow = "limit is low",
+export enum ProgramError {
     InvalidCalculatedRoot = "invalid calculated root",
     InvalidSignature = "invalid signature",
     InsufficientBalance = "insufficient balance",
@@ -22,4 +7,15 @@ export enum Errors {
     InvalidBalanceOwner = "invalid balance owner",
     InvalidLiquidityProvider = "invalid liquidity provider",
     ExceededLimit = "exceeded limit",
+}
+
+export enum StorageError {
+    OrderNotFound = "order is not found",
+    OrderExists = "order already exists",
+    BalanceNotFound = "balance is not found",
+    BalanceExists = "balance already exists",
+    PoolNotFound = "pool is not found",
+    PoolExists = "pool already exists",
+    LiqudityNotFound = "liquidity is not found",
+    LiqudityExists = "liquidity already exists",
 }

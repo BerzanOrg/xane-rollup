@@ -1,91 +1,139 @@
 import { it, describe } from "node:test"
 import assert from "node:assert/strict"
-import { Field, PrivateKey, UInt64 } from "o1js"
-import { Balance, RollupErrors, RollupStorage } from "xane"
+import { Field, UInt64 } from "o1js"
+import { Balance, RollupStorage, StorageError } from "xane"
+import { utils } from "./utils.js"
 
-describe("Balances", async () => {
-    // an empty rollup data storage for testing
+describe("Balance Storage", async () => {
     const storage = RollupStorage.empty()
 
-    // a token ID for testing
-    const tokenId = Field(1)
+    const minaTokenId = Field(1)
+    const usdTokenId = Field(2)
 
-    // a secret key for testing
-    const secretKey = PrivateKey.random()
+    const berzan = utils.generateKeypair()
+    const john = utils.generateKeypair()
+    const mr305 = utils.generateKeypair()
 
-    // an address for testing
-    const address = secretKey.toPublicKey()
+    it("stores berzan's mina balance", async () => {
+        const initialBalance = new Balance({
+            tokenId: minaTokenId,
+            owner: berzan.publicKey,
+            amount: UInt64.zero,
+        })
 
-    // the initial balance
-    const initialBalance = new Balance({
-        tokenId,
-        owner: address,
-        amount: new UInt64(1_000_000n),
-    })
-
-    it("can store the balance of a user", async () => {
-        const res1 = storage.balances.store(initialBalance)
+        utils.unwrapValue(storage.balances.store(initialBalance))
         storage.updateState()
 
-        if (res1 instanceof Error) {
-            assert.fail(res1)
-        }
+        const balance = utils.unwrapValue(
+            storage.balances.get({
+                tokenId: minaTokenId,
+                owner: berzan.publicKey,
+            }),
+        )
 
-        const res2 = storage.balances.get({
-            tokenId,
-            owner: address,
-        })
-
-        if (res2 instanceof Error) {
-            assert.fail(res2)
-        }
-
-        assert.deepEqual(res2, initialBalance)
+        assert.deepEqual(balance.tokenId, minaTokenId)
+        assert.deepEqual(balance.owner, berzan.publicKey)
+        assert.deepEqual(balance.amount, UInt64.zero)
     })
 
-    it("can't store the balance of a user, if it already exists", async () => {
-        const res1 = storage.balances.store(initialBalance)
-
-        assert.deepEqual((res1 as Error).message, RollupErrors.BalanceExists)
-    })
-
-    it("can update the balance of a user", async () => {
-        const res1 = storage.balances.get({
-            tokenId,
-            owner: address,
+    it("stores berzan's usd balance", async () => {
+        const initialBalance = new Balance({
+            tokenId: usdTokenId,
+            owner: berzan.publicKey,
+            amount: UInt64.zero,
         })
 
-        if (res1 instanceof Error) {
-            assert.fail(res1)
-        }
-
-        assert.deepEqual(res1, initialBalance)
-
-        const newBalanceAmount = res1.amount.add(new UInt64(45_000n))
-
-        initialBalance.amount = newBalanceAmount
+        utils.unwrapValue(storage.balances.store(initialBalance))
         storage.updateState()
 
-        const res2 = storage.balances.get({
-            tokenId,
-            owner: address,
-        })
+        const balance = utils.unwrapValue(
+            storage.balances.get({
+                tokenId: usdTokenId,
+                owner: berzan.publicKey,
+            }),
+        )
 
-        if (res2 instanceof Error) {
-            assert.fail(res2)
-        }
-
-        assert.deepEqual(res2.amount, newBalanceAmount)
+        assert.deepEqual(balance.tokenId, usdTokenId)
+        assert.deepEqual(balance.owner, berzan.publicKey)
+        assert.deepEqual(balance.amount, UInt64.zero)
     })
 
-    it("can't update the balance of a user, if it isn't stored", async () => {
-        const randomAddress = PrivateKey.random().toPublicKey()
-
-        const res1 = storage.balances.get({
-            tokenId,
-            owner: randomAddress,
+    it("stores john's mina balance", async () => {
+        const initialBalance = new Balance({
+            tokenId: minaTokenId,
+            owner: john.publicKey,
+            amount: UInt64.zero,
         })
 
-        assert.deepEqual((res1 as Error).message, RollupErrors.BalanceNotFound)
+        utils.unwrapValue(storage.balances.store(initialBalance))
+        storage.updateState()
+
+        const balance = utils.unwrapValue(
+            storage.balances.get({
+                tokenId: minaTokenId,
+                owner: john.publicKey,
+            }),
+        )
+
+        assert.deepEqual(balance.tokenId, minaTokenId)
+        assert.deepEqual(balance.owner, john.publicKey)
+        assert.deepEqual(balance.amount, UInt64.zero)
+    })
+
+    it("doesn't store berzan's balance again", async () => {
+        const balance = new Balance({
+            tokenId: minaTokenId,
+            owner: berzan.publicKey,
+            amount: UInt64.zero,
+        })
+
+        const error = utils.unwrapError(storage.balances.store(balance))
+
+        assert.deepEqual(error.message, StorageError.BalanceExists)
+    })
+
+    it("updates berzan's mina balance", async () => {
+        const balance = utils.unwrapValue(
+            storage.balances.get({
+                tokenId: minaTokenId,
+                owner: berzan.publicKey,
+            }),
+        )
+
+        balance.amount = utils.createUInt64(21_000_000, 9)
+        storage.updateState()
+
+        const updatedBalance = utils.unwrapValue(
+            storage.balances.get({
+                tokenId: minaTokenId,
+                owner: berzan.publicKey,
+            }),
+        )
+
+        assert.deepEqual(updatedBalance.tokenId, minaTokenId)
+        assert.deepEqual(updatedBalance.owner, berzan.publicKey)
+        assert.deepEqual(updatedBalance.amount, utils.createUInt64(21_000_000, 9))
+    })
+
+    it("doesn't get john's usd balance", async () => {
+        const error = utils.unwrapError(
+            storage.balances.get({
+                tokenId: usdTokenId,
+                owner: john.publicKey,
+            }),
+        )
+
+        assert.deepEqual(error.message, StorageError.BalanceNotFound)
+    })
+
+    it("doesn't get mr305's mina balance", async () => {
+        const error = utils.unwrapError(
+            storage.balances.get({
+                tokenId: minaTokenId,
+                owner: mr305.publicKey,
+            }),
+        )
+
+        assert.deepEqual(error.message, StorageError.BalanceNotFound)
     })
 })

@@ -66,6 +66,8 @@ export class RollupStorage {
 
     /**
      * Updates the rollup state.
+     *
+     * Call this method after updating any item in the storage.
      */
     public updateState() {
         this.state.balancesRoot = this.balances.getRoot()

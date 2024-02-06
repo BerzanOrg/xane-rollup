@@ -1,6 +1,9 @@
 import { Field, MerkleTree, MerkleWitness } from "o1js"
-import { Errors } from "./RollupErrors.js"
+import { StorageError } from "./RollupErrors.js"
 import { OrderEntry } from "./OrderEntry.js"
+
+// Change the type of `Error` to provide error messagees in a type-safe way.
+declare function Error(msg: `${StorageError}`): Error
 
 /**
  * Height of the merkle tree that stores order entries.
@@ -86,7 +89,7 @@ export class OrderStorage {
     public getOrder(params: { orderId: number }): OrderEntry | Error {
         const order = this.innerArray.at(params.orderId)
 
-        return order || Error(Errors.OrderNotFound)
+        return order || Error(StorageError.OrderNotFound)
     }
 
     /**
@@ -97,7 +100,7 @@ export class OrderStorage {
     public makeCancelled(params: { orderId: number }): void | Error {
         const order = this.innerArray.at(params.orderId)
 
-        if (!order) return Error(Errors.OrderNotFound)
+        if (!order) return Error(StorageError.OrderNotFound)
 
         order.cancel()
     }
@@ -110,7 +113,7 @@ export class OrderStorage {
     public makeExecuted(params: { orderId: number }): void | Error {
         const order = this.innerArray.at(params.orderId)
 
-        if (!order) return Error(Errors.OrderNotFound)
+        if (!order) return Error(StorageError.OrderNotFound)
 
         order.execute()
     }
@@ -123,7 +126,7 @@ export class OrderStorage {
     public getOrderWitness(params: { orderId: number }): OrderWitness | Error {
         const order = this.innerArray.at(params.orderId)
 
-        if (!order) return Error(Errors.OrderNotFound)
+        if (!order) return Error(StorageError.OrderNotFound)
 
         const witness = this.innerTree.getWitness(BigInt(params.orderId))
 

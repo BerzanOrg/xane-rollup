@@ -1,8 +1,8 @@
 export { RollupContract } from "./RollupContract.js"
-export { RollupProgram as RollupProgram } from "./RollupProgram.js"
-export { RollupState } from "./RollupState.js"
+export { RollupProgram } from "./RollupProgram.js"
+export { RollupState, INITIAL_LP_POINTS } from "./RollupState.js"
 export { RollupStorage } from "./RollupStorage.js"
-export { Errors as RollupErrors } from "./RollupErrors.js"
+export { ProgramError, StorageError } from "./RollupErrors.js"
 
 export type { BalanceWitness } from "./StorageForBalances.js"
 export type { PoolWitness } from "./StorageForPools.js"

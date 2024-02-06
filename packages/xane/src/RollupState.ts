@@ -12,7 +12,7 @@ import { Balance, Liquidity, Pool } from "./Structs.js"
 import { BalanceDoubleWitness, BalanceWitness } from "./StorageForBalances.js"
 import { PoolWitness } from "./StorageForPools.js"
 import { LiqudityWitness } from "./StorageForLiquidities.js"
-import { Errors } from "./RollupErrors.js"
+import { ProgramError } from "./RollupErrors.js"
 
 /** Initial supply of LP points. */
 export const INITIAL_LP_POINTS = UInt64.from(65535)
@@ -53,7 +53,7 @@ export class RollupState extends Struct({
         // Requires calculated root to be valid.
         Bool(true)
             .and(this.balancesRoot.equals(calculatedBalancesRoot))
-            .assertTrue(Errors.InvalidCalculatedRoot)
+            .assertTrue(ProgramError.InvalidCalculatedRoot)
 
         // Adds amount to balance.
         balance.amount = balance.amount.add(amount)
@@ -81,7 +81,7 @@ export class RollupState extends Struct({
         // Requires calculated root to be valid.
         Bool(true)
             .and(this.balancesRoot.equals(calculatedBalancesRoot))
-            .assertTrue(Errors.InvalidCalculatedRoot)
+            .assertTrue(ProgramError.InvalidCalculatedRoot)
 
         // Adds amount to balance.
         balance.amount = balance.amount.sub(amount)
@@ -131,31 +131,31 @@ export class RollupState extends Struct({
         // Requires signature to be valid.
         Bool(true)
             .and(signature.verify(sender, message))
-            .assertTrue(Errors.InvalidSignature)
+            .assertTrue(ProgramError.InvalidSignature)
 
         // Requires roots to be valid.
         Bool(true)
             .and(this.balancesRoot.equals(calculatedBalancesRoot))
             .and(this.poolsRoot.equals(calculatedPoolsRoot))
             .and(this.liquiditiesRoot.equals(calculatedLiquiditiesRoot))
-            .assertTrue(Errors.InvalidCalculatedRoot)
+            .assertTrue(ProgramError.InvalidCalculatedRoot)
 
         // Requires balances to be sufficient.
         Bool(true)
             .and(baseTokenBalance.amount.greaterThanOrEqual(baseTokenAmount))
             .and(quoteTokenBalance.amount.greaterThanOrEqual(quoteTokenAmount))
-            .assertTrue(Errors.InsufficientBalance)
+            .assertTrue(ProgramError.InsufficientBalance)
 
         // Require token identifiers not to be equal.
         Bool(false)
             .and(baseTokenBalance.tokenId.equals(quoteTokenBalance.tokenId))
-            .assertFalse(Errors.InvalidTokenId)
+            .assertFalse(ProgramError.InvalidTokenId)
 
         // Requires balance owners to be sender.
         Bool(true)
             .and(baseTokenBalance.owner.equals(sender))
             .and(quoteTokenBalance.owner.equals(sender))
-            .assertTrue(Errors.InvalidBalanceOwner)
+            .assertTrue(ProgramError.InvalidBalanceOwner)
 
         // Updates data.
         baseTokenBalance.amount = baseTokenBalance.amount.sub(baseTokenAmount)
@@ -239,58 +239,58 @@ export class RollupState extends Struct({
         // Requires signature to be valid.
         Bool(true)
             .and(signature.verify(sender, message))
-            .assertTrue(Errors.InvalidSignature)
+            .assertTrue(ProgramError.InvalidSignature)
 
         // Requires roots to be valid.
         Bool(true)
             .and(this.balancesRoot.equals(calculatedBalancesRoot))
             .and(this.poolsRoot.equals(calculatedPoolsRoot))
             .and(this.liquiditiesRoot.equals(calculatedLiquiditiesRoot))
-            .assertTrue(Errors.InvalidCalculatedRoot)
+            .assertTrue(ProgramError.InvalidCalculatedRoot)
 
         // Requires balance owners to be sender.
         Bool(true)
             .and(baseTokenBalance.owner.equals(sender))
             .and(quoteTokenBalance.owner.equals(sender))
-            .assertTrue(Errors.InvalidBalanceOwner)
+            .assertTrue(ProgramError.InvalidBalanceOwner)
 
         // Requires liquidity provider to be sender if liquidity is not empty.
         Provable.if(
             isLiquidityEmpty,
             Bool(true),
             liquidity.provider.equals(sender),
-        ).assertTrue(Errors.InvalidLiquidityProvider)
+        ).assertTrue(ProgramError.InvalidLiquidityProvider)
 
         // Requires balances to be sufficient.
         Bool(true)
             .and(baseTokenBalance.amount.greaterThanOrEqual(baseTokenAmount))
             .and(quoteTokenBalance.amount.greaterThanOrEqual(quoteTokenAmount))
-            .assertTrue(Errors.InsufficientBalance)
+            .assertTrue(ProgramError.InsufficientBalance)
 
         // Requires limits not to be exceeded.
         Bool(true)
             .and(quoteTokenAmount.lessThanOrEqual(quoteTokenAmountMaxLimit))
-            .assertTrue(Errors.ExceededLimit)
+            .assertTrue(ProgramError.ExceededLimit)
 
         // Requires token identifiers to be valid.
         Bool(true)
             .and(pool.baseTokenId.equals(baseTokenBalance.tokenId))
             .and(pool.quoteTokenId.equals(quoteTokenBalance.tokenId))
-            .assertTrue(Errors.InvalidTokenId)
+            .assertTrue(ProgramError.InvalidTokenId)
 
         // Requires token identifiers to be valid if liquidity is not empty.
         Provable.if(
             isLiquidityEmpty,
             Bool(true),
             liquidity.baseTokenId.equals(baseTokenBalance.tokenId),
-        ).assertTrue(Errors.InvalidTokenId)
+        ).assertTrue(ProgramError.InvalidTokenId)
 
         // Requires token identifiers to be valid if liquidity is not empty.
         Provable.if(
             isLiquidityEmpty,
             Bool(true),
             liquidity.quoteTokenId.equals(quoteTokenBalance.tokenId),
-        ).assertTrue(Errors.InvalidTokenId)
+        ).assertTrue(ProgramError.InvalidTokenId)
 
         // Updates data.
         baseTokenBalance.amount = baseTokenBalance.amount.sub(baseTokenAmount)
@@ -363,37 +363,37 @@ export class RollupState extends Struct({
         // Requires signature to be valid.
         Bool(true)
             .and(signature.verify(sender, message))
-            .assertTrue(Errors.InvalidSignature)
+            .assertTrue(ProgramError.InvalidSignature)
 
         // Requires roots to be valid.
         Bool(true)
             .and(this.balancesRoot.equals(calculatedBalancesRoot))
             .and(this.poolsRoot.equals(calculatedPoolsRoot))
             .and(this.liquiditiesRoot.equals(calculatedLiquiditiesRoot))
-            .assertTrue(Errors.InvalidCalculatedRoot)
+            .assertTrue(ProgramError.InvalidCalculatedRoot)
 
         // Requires balance owners to be sender.
         Bool(true)
             .and(baseTokenBalance.owner.equals(sender))
             .and(quoteTokenBalance.owner.equals(sender))
-            .assertTrue(Errors.InvalidBalanceOwner)
+            .assertTrue(ProgramError.InvalidBalanceOwner)
 
         // Requires liquidity provider to be sender if liquidity is not empty.
         Bool(true)
             .and(liquidity.provider.equals(sender))
-            .assertTrue(Errors.InvalidLiquidityProvider)
+            .assertTrue(ProgramError.InvalidLiquidityProvider)
 
         // Requires balances to be sufficient.
         Bool(true)
             .and(baseTokenBalance.amount.greaterThanOrEqual(baseTokenAmount))
             .and(quoteTokenBalance.amount.greaterThanOrEqual(quoteTokenAmount))
-            .assertTrue(Errors.InsufficientBalance)
+            .assertTrue(ProgramError.InsufficientBalance)
 
         // Requires limits not to be exceeded.
         Bool(true)
             .and(baseTokenAmount.greaterThanOrEqual(baseTokenAmountMinLimit))
             .and(quoteTokenAmount.greaterThanOrEqual(quoteTokenAmountMinLimit))
-            .assertTrue(Errors.ExceededLimit)
+            .assertTrue(ProgramError.ExceededLimit)
 
         // Requires token identifiers to be valid.
         Bool(true)
@@ -401,7 +401,7 @@ export class RollupState extends Struct({
             .and(pool.quoteTokenId.equals(quoteTokenBalance.tokenId))
             .and(liquidity.baseTokenId.equals(baseTokenBalance.tokenId))
             .and(liquidity.quoteTokenId.equals(quoteTokenBalance.tokenId))
-            .assertTrue(Errors.InvalidTokenId)
+            .assertTrue(ProgramError.InvalidTokenId)
 
         // Updates data.
         baseTokenBalance.amount = baseTokenBalance.amount.add(baseTokenAmount)
@@ -463,35 +463,35 @@ export class RollupState extends Struct({
         // Requires signature to be valid.
         Bool(true)
             .and(signature.verify(sender, message))
-            .assertTrue(Errors.InvalidSignature)
+            .assertTrue(ProgramError.InvalidSignature)
 
         // Requires roots to be valid.
         Bool(true)
             .and(this.balancesRoot.equals(calculatedBalancesRoot))
             .and(this.poolsRoot.equals(calculatedPoolsRoot))
-            .assertTrue(Errors.InvalidCalculatedRoot)
+            .assertTrue(ProgramError.InvalidCalculatedRoot)
 
         // Requires balance owners to be sender.
         Bool(true)
             .and(baseTokenBalance.owner.equals(sender))
             .and(quoteTokenBalance.owner.equals(sender))
-            .assertTrue(Errors.InvalidBalanceOwner)
+            .assertTrue(ProgramError.InvalidBalanceOwner)
 
         // Requires balance to be sufficient.
         Bool(true)
             .and(quoteTokenBalance.amount.greaterThanOrEqual(quoteTokenAmount))
-            .assertTrue(Errors.InsufficientBalance)
+            .assertTrue(ProgramError.InsufficientBalance)
 
         // Requires limit not to be exceeded.
         Bool(true)
             .and(quoteTokenAmount.lessThanOrEqual(quoteTokenAmountMaxLimit))
-            .assertTrue(Errors.ExceededLimit)
+            .assertTrue(ProgramError.ExceededLimit)
 
         // Requires token identifiers to be valid.
         Bool(true)
             .and(pool.baseTokenId.equals(baseTokenBalance.tokenId))
             .and(pool.quoteTokenId.equals(quoteTokenBalance.tokenId))
-            .assertTrue(Errors.InvalidTokenId)
+            .assertTrue(ProgramError.InvalidTokenId)
 
         // Updates data.
         baseTokenBalance.amount = baseTokenBalance.amount.add(baseTokenAmount)
@@ -546,35 +546,35 @@ export class RollupState extends Struct({
         // Requires signature to be valid.
         Bool(true)
             .and(signature.verify(sender, message))
-            .assertTrue(Errors.InvalidSignature)
+            .assertTrue(ProgramError.InvalidSignature)
 
         // Requires roots to be valid.
         Bool(true)
             .and(this.balancesRoot.equals(calculatedBalancesRoot))
             .and(this.poolsRoot.equals(calculatedPoolsRoot))
-            .assertTrue(Errors.InvalidCalculatedRoot)
+            .assertTrue(ProgramError.InvalidCalculatedRoot)
 
         // Requires balance owners to be sender.
         Bool(true)
             .and(baseTokenBalance.owner.equals(sender))
             .and(quoteTokenBalance.owner.equals(sender))
-            .assertTrue(Errors.InvalidBalanceOwner)
+            .assertTrue(ProgramError.InvalidBalanceOwner)
 
         // Requires balance to be sufficient.
         Bool(true)
             .and(quoteTokenBalance.amount.greaterThanOrEqual(quoteTokenAmount))
-            .assertTrue(Errors.InsufficientBalance)
+            .assertTrue(ProgramError.InsufficientBalance)
 
         // Requires limit not to be exceeded.
         Bool(true)
             .and(quoteTokenAmount.greaterThanOrEqual(quoteTokenAmountMinLimit))
-            .assertTrue(Errors.ExceededLimit)
+            .assertTrue(ProgramError.ExceededLimit)
 
         // Requires token identifiers to be valid.
         Bool(true)
             .and(pool.baseTokenId.equals(baseTokenBalance.tokenId))
             .and(pool.quoteTokenId.equals(quoteTokenBalance.tokenId))
-            .assertTrue(Errors.InvalidTokenId)
+            .assertTrue(ProgramError.InvalidTokenId)
 
         // Updates data.
         baseTokenBalance.amount = baseTokenBalance.amount.sub(baseTokenAmount)

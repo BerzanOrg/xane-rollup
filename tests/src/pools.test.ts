@@ -1,119 +1,109 @@
 import { it, describe } from "node:test"
 import assert from "node:assert/strict"
-import { Field, UInt64 } from "o1js"
-import { Pool, RollupErrors, RollupStorage } from "xane"
+import { Field } from "o1js"
+import { Pool, StorageError, RollupStorage, INITIAL_LP_POINTS } from "xane"
+import { utils } from "./utils.js"
 
-describe("Pools", async () => {
-    // an empty rollup data storage for testing
+describe("Pool Storage", async () => {
     const storage = RollupStorage.empty()
 
-    // a token ID for testing
-    const baseTokenId = Field(1)
+    const minaTokenId = Field(1)
+    const usdTokenId = Field(2)
+    const eurTokenId = Field(3)
 
-    // a token ID for testing
-    const quoteTokenId = Field(2)
+    it("stores mina/usd pool", async () => {
+        const x = utils.createUInt64(100_000, 3)
+        const y = utils.createUInt64(200_000, 3)
 
-    // an amount to represent base token amount for testing
-    const baseTokenAmount = new UInt64(100_000_000n)
+        const initialPool = new Pool({
+            baseTokenId: minaTokenId,
+            quoteTokenId: usdTokenId,
+            baseTokenAmount: x,
+            quoteTokenAmount: y,
+            k: x.mul(y),
+            lpPoints: INITIAL_LP_POINTS,
+        })
 
-    // an amount to represent quote token amount for testing
-    const quoteTokenAmount = new UInt64(40_000_000n)
-
-    // k is calculated using `x * y = k` formula
-    const k = baseTokenAmount.mul(quoteTokenAmount)
-
-    // LP tokens initial supply is `uint16_max` which is `65535`.
-    const lpPoints = new UInt64(65535)
-
-    // the initial pool
-    const initialPool = new Pool({
-        baseTokenId,
-        quoteTokenId,
-        baseTokenAmount,
-        quoteTokenAmount,
-        k,
-        lpPoints,
-    })
-
-    it("can store the pool of a specific pair", async () => {
-        const res1 = storage.pools.store(initialPool)
+        utils.unwrapValue(storage.pools.store(initialPool))
         storage.updateState()
 
-        if (res1 instanceof Error) {
-            assert.fail(res1)
-        }
-
-        const res2 = storage.pools.get({
-            baseTokenId,
-            quoteTokenId,
-        })
-
-        if (res2 instanceof Error) {
-            assert.fail(res2)
-        }
-
-        assert.deepEqual(res2, initialPool)
+        const pool = utils.unwrapValue(
+            storage.pools.get({
+                baseTokenId: minaTokenId,
+                quoteTokenId: usdTokenId,
+            }),
+        )
+        assert.deepEqual(pool.baseTokenId, minaTokenId)
+        assert.deepEqual(pool.quoteTokenId, usdTokenId)
+        assert.deepEqual(pool.baseTokenAmount, x)
+        assert.deepEqual(pool.quoteTokenAmount, y)
+        assert.deepEqual(pool.k, x.mul(y))
+        assert.deepEqual(pool.lpPoints, INITIAL_LP_POINTS)
     })
 
-    it("can't store the pool of a specific pair, if it already exists", async () => {
-        const res1 = storage.pools.store(initialPool)
+    it("doesn't store mina/usd pool again", async () => {
+        const x = utils.createUInt64(100_000, 3)
+        const y = utils.createUInt64(200_000, 3)
 
-        assert.deepEqual((res1 as Error).message, RollupErrors.PoolExists)
-    })
-
-    it("can update the pool of a specific pair", async () => {
-        const res1 = storage.pools.get({
-            baseTokenId,
-            quoteTokenId,
+        const pool = new Pool({
+            baseTokenId: minaTokenId,
+            quoteTokenId: usdTokenId,
+            baseTokenAmount: x,
+            quoteTokenAmount: y,
+            k: x.mul(y),
+            lpPoints: INITIAL_LP_POINTS,
         })
 
-        if (res1 instanceof Error) {
-            assert.fail(res1)
-        }
+        const error = utils.unwrapError(storage.pools.store(pool))
 
-        assert.deepEqual(res1, initialPool)
+        assert.deepEqual(error.message, StorageError.PoolExists)
+    })
 
-        const baseTokenAmountNew = res1.baseTokenAmount.add(new UInt64(123_456_789n))
+    it("updates mina/usd pool", async () => {
+        const pool = utils.unwrapValue(
+            storage.pools.get({
+                baseTokenId: minaTokenId,
+                quoteTokenId: usdTokenId,
+            }),
+        )
 
-        const quoteTokenAmountNew = baseTokenAmountNew
-            .mul(res1.quoteTokenAmount)
-            .div(res1.baseTokenAmount)
+        const newX = pool.baseTokenAmount.add(utils.createUInt64(200_000, 3))
 
-        const kNew = baseTokenAmountNew.mul(quoteTokenAmountNew)
+        const newY = newX.mul(pool.quoteTokenAmount).div(pool.baseTokenAmount)
 
-        const lpTokensSupplyNew = baseTokenAmountNew
-            .mul(res1.lpPoints)
-            .div(res1.baseTokenAmount)
+        const newK = newX.mul(newY)
 
-        initialPool.baseTokenAmount = baseTokenAmountNew
-        initialPool.quoteTokenAmount = quoteTokenAmountNew
-        initialPool.k = kNew
-        initialPool.lpPoints = lpTokensSupplyNew
+        const newLpPoints = newX.mul(pool.lpPoints).div(pool.baseTokenAmount)
+
+        pool.baseTokenAmount = newX
+        pool.quoteTokenAmount = newY
+        pool.k = newK
+        pool.lpPoints = newLpPoints
         storage.updateState()
 
-        const res2 = storage.pools.get({
-            baseTokenId,
-            quoteTokenId,
-        })
+        const updatedPool = utils.unwrapValue(
+            storage.pools.get({
+                baseTokenId: minaTokenId,
+                quoteTokenId: usdTokenId,
+            }),
+        )
 
-        if (res2 instanceof Error) {
-            assert.fail(res2)
-        }
-
-        assert.deepEqual(res2.baseTokenAmount, baseTokenAmountNew)
-        assert.deepEqual(res2.quoteTokenAmount, quoteTokenAmountNew)
-        assert.deepEqual(res2.k, kNew)
-        assert.deepEqual(res2.lpPoints, lpTokensSupplyNew)
+        assert.deepEqual(updatedPool.baseTokenId, minaTokenId)
+        assert.deepEqual(updatedPool.quoteTokenId, usdTokenId)
+        assert.deepEqual(updatedPool.baseTokenAmount, newX)
+        assert.deepEqual(updatedPool.quoteTokenAmount, newY)
+        assert.deepEqual(updatedPool.k, newK)
+        assert.deepEqual(updatedPool.lpPoints, newLpPoints)
     })
 
-    it("can't update the pool of a specific pair, if it isn't stored", async () => {
-        const randomTokenId = Field(45)
+    it("doesn't get mina/eur pool", async () => {
+        const error = utils.unwrapError(
+            storage.pools.get({
+                baseTokenId: minaTokenId,
+                quoteTokenId: eurTokenId,
+            }),
+        )
 
-        const res1 = storage.pools.get({
-            baseTokenId: randomTokenId,
-            quoteTokenId,
-        })
-
-        assert.deepEqual((res1 as Error).message, RollupErrors.PoolNotFound)
+        assert.deepEqual(error.message, StorageError.PoolNotFound)
     })
 })
