@@ -12,6 +12,7 @@
         "build:packages": "pnpm -r -F=./packages/** build",
         "dev:docs": "pnpm -r -F=./docs dev",
         "dev:frontend": "pnpm -r -F=./frontend dev",
+        "start:client": "pnpm -r -F=./client start",
         "clean": "find . \\( -name '.pnpm-store' -o -name 'build' -o -name 'node_modules' \\) -type d -exec rm -rf {} +",
         "format": "prettier --write .",
         "lint": "eslint .",

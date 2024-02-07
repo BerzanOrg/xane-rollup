@@ -4,6 +4,10 @@
     "license": "GPL-3.0-only",
     "private": true,
     "type": "module",
+    "scripts": {
+        "build": "tsc",
+        "start": "node build/index.js"
+    },
     "devDependencies": {
         "@types/node": "^20.10.0"
     },

@@ -166,7 +166,25 @@ export class StorageForBalances {
     /**
      *  Returns all the balances.
      */
-    public getBalances(): Array<Balance> {
+    public getAllBalances(): Array<Balance> {
         return this.innerArray
+    }
+
+    /**
+     *  Returns balances of the given owner.
+     */
+    public getBalancesByOwner(params: { owner: PublicKey }): Array<Balance> {
+        return this.innerArray.filter((balance) =>
+            balance.owner.equals(params.owner).toBoolean(),
+        )
+    }
+
+    /**
+     *  Returns balances of the given token ID.
+     */
+    public getBalancesByTokenId(params: { tokenId: Field }): Array<Balance> {
+        return this.innerArray.filter((balance) =>
+            balance.tokenId.equals(params.tokenId).toBoolean(),
+        )
     }
 }

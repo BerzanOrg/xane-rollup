@@ -139,7 +139,31 @@ export class StorageForLiquidities {
     /**
      *  Returns all the liquidities.
      */
-    public getLiquidities(): Array<Liquidity> {
+    public getAllLiquidities(): Array<Liquidity> {
         return this.innerArray
+    }
+
+    /**
+     *  Returns liquidites of the given provider.
+     */
+    public getLiquiditiesByProvider(params: { provider: PublicKey }): Array<Liquidity> {
+        return this.innerArray.filter((liquidity) =>
+            liquidity.provider.equals(params.provider).toBoolean(),
+        )
+    }
+
+    /**
+     *  Returns liquidites of the given pool.
+     */
+    public getLiquiditiesByPool(params: {
+        baseTokenId: Field
+        quoteTokenId: Field
+    }): Array<Liquidity> {
+        return this.innerArray.filter((liquidity) =>
+            liquidity.baseTokenId
+                .equals(params.baseTokenId)
+                .and(liquidity.quoteTokenId.equals(params.quoteTokenId))
+                .toBoolean(),
+        )
     }
 }

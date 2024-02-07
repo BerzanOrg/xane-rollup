@@ -1,45 +1,14 @@
-import { PrivateKey } from "o1js"
+import { Field, PrivateKey, PublicKey } from "o1js"
 import { readFileSync, existsSync, writeFileSync } from "fs"
 import { Server, createServer } from "http"
 import { Balance, Liquidity, Pool, RollupStorage } from "xane"
 import { exit } from "process"
-import z from "zod"
 import { writeFile } from "fs/promises"
+import { RequestSchema, StorageSchema } from "./schemas.js"
+import { readBodyJson } from "./utils.js"
 
 /** The interval duration for rollup background process. */
 const INTERVAL_DURATION = 5 * 60 * 1000
-
-/** The Zod schema used to validate rollup storage in disk. */
-const StorageSchema = z.object({
-    balances: z.array(
-        z.object({
-            tokenId: z.string(),
-            owner: z.string(),
-            amount: z.string(),
-        }),
-    ),
-    pools: z.array(
-        z.object({
-            baseTokenId: z.string(),
-            quoteTokenId: z.string(),
-            baseTokenAmount: z.string(),
-            quoteTokenAmount: z.string(),
-            k: z.string(),
-            lpPoints: z.string(),
-        }),
-    ),
-    liquidities: z.array(
-        z.object({
-            baseTokenId: z.string(),
-            quoteTokenId: z.string(),
-            lpPoints: z.string(),
-            provider: z.string(),
-        }),
-    ),
-})
-
-/** The TypeScript type of the Zod schema used to validate rollup storage in disk. */
-type StorageSchema = z.infer<typeof StorageSchema>
 
 /** The rollup client.  */
 export class Client {
@@ -80,7 +49,7 @@ export class Client {
                     liquidities: [],
                 } satisfies StorageSchema)
 
-                writeFileSync(dataToSave, config.storageDirectory)
+                writeFileSync(config.storageDirectory, dataToSave)
             }
 
             const savedStorageContent = readFileSync(config.storageDirectory, "utf-8")
@@ -90,15 +59,40 @@ export class Client {
             StorageSchema.parse(savedStorage)
 
             const savedBalances = savedStorage.balances.map(
-                (balance) => new Balance(Balance.fromJSON(balance)),
+                (balance) =>
+                    new Balance(
+                        Balance.fromJSON({
+                            ...balance,
+                            tokenId: balance.tokenId.toString(),
+                            amount: balance.amount.toString(),
+                        }),
+                    ),
             )
 
             const savedPools = savedStorage.pools.map(
-                (pool) => new Pool(Pool.fromJSON(pool)),
+                (pool) =>
+                    new Pool(
+                        Pool.fromJSON({
+                            baseTokenId: pool.baseTokenId.toString(),
+                            quoteTokenId: pool.quoteTokenId.toString(),
+                            baseTokenAmount: pool.baseTokenAmount.toString(),
+                            quoteTokenAmount: pool.quoteTokenAmount.toString(),
+                            k: pool.k.toString(),
+                            lpPoints: pool.lpPoints.toString(),
+                        }),
+                    ),
             )
 
             const savedLiquidities = savedStorage.liquidities.map(
-                (liquidity) => new Liquidity(Liquidity.fromJSON(liquidity)),
+                (liquidity) =>
+                    new Liquidity(
+                        Liquidity.fromJSON({
+                            ...liquidity,
+                            baseTokenId: liquidity.baseTokenId.toString(),
+                            quoteTokenId: liquidity.quoteTokenId.toString(),
+                            lpPoints: liquidity.lpPoints.toString(),
+                        }),
+                    ),
             )
 
             return new Client(
@@ -121,6 +115,7 @@ export class Client {
     public start() {
         this.startServer()
         this.startBackgroundProcess()
+        console.log("Xane client is running at port %d", this.port)
     }
 
     /**
@@ -137,30 +132,53 @@ export class Client {
      */
     private startServer() {
         this.server.on("request", async (req, res) => {
-            req.url
-            res.writeHead(200, { "Content-Type": "application/json" })
-            res.end(
-                JSON.stringify({
-                    data: "Hello World!",
-                }),
-            )
+            try {
+                const body = RequestSchema.parse(await readBodyJson(req))
+                res.writeHead(200, { "Content-Type": "application/json" })
+                res.end(JSON.stringify(this.runMethod(body)))
+            } catch (error) {
+                res.writeHead(400)
+                res.end("non-existent method")
+            }
         })
-
         this.server.listen(this.port)
     }
+
     /**
      * Saves the rollup state to disk.
      */
     private async saveState() {
-        const balances = this.storage.balances
-            .getBalances()
+        const balances: StorageSchema["balances"] = this.storage.balances
+            .getAllBalances()
             .map((balance) => Balance.toJSON(balance))
+            .map((balance) => ({
+                ...balance,
+                tokenId: BigInt(balance.tokenId),
+                amount: BigInt(balance.amount),
+            }))
 
-        const pools = this.storage.pools.getPools().map((pool) => Pool.toJSON(pool))
+        const pools = this.storage.pools
+            .getAllPools()
+            .map((pool) => Pool.toJSON(pool))
+            .map((pool) => ({
+                ...pool,
+                baseTokenId: BigInt(pool.baseTokenId),
+                quoteTokenId: BigInt(pool.quoteTokenId),
+                baseTokenAmount: BigInt(pool.baseTokenAmount),
+                quoteTokenAmount: BigInt(pool.quoteTokenAmount),
+                k: BigInt(pool.k),
+                lpPoints: BigInt(pool.lpPoints),
+            }))
 
-        const liquidities = this.storage.liquidities
-            .getLiquidities()
+        const liquidities: StorageSchema["liquidities"] = this.storage.liquidities
+            .getAllLiquidities()
             .map((liquidity) => Liquidity.toJSON(liquidity))
+            .map((liquidity) => ({
+                ...liquidity,
+                baseTokenId: BigInt(liquidity.baseTokenId),
+                quoteTokenId: BigInt(liquidity.quoteTokenId),
+                lpPoints: BigInt(liquidity.lpPoints),
+            }))
 
         const dataToSave = JSON.stringify({
             balances,
@@ -169,5 +187,97 @@ export class Client {
         } satisfies StorageSchema)
 
         await writeFile(this.storageDirectory, dataToSave)
+    }
+
+    /** Runs the given method and responds. */
+    private runMethod(reqBody: RequestSchema): string {
+        switch (reqBody.method) {
+            case "getAllBalances": {
+                const allBalances = this.storage.balances.getAllBalances()
+                return JSON.stringify(allBalances)
+            }
+
+            case "getBalancesByOwner": {
+                const balancesByOwner = this.storage.balances.getBalancesByOwner({
+                    owner: PublicKey.fromBase58(reqBody.owner),
+                })
+                return JSON.stringify(balancesByOwner)
+            }
+
+            case "getBalancesByTokenId": {
+                const balancesByTokenId = this.storage.balances.getBalancesByTokenId({
+                    tokenId: Field.from(reqBody.tokenId),
+                })
+                return JSON.stringify(balancesByTokenId)
+            }
+
+            case "getBalance": {
+                const balance = this.storage.balances.get({
+                    tokenId: Field.from(reqBody.tokenId),
+                    owner: PublicKey.fromBase58(reqBody.owner),
+                })
+                return JSON.stringify(balance)
+            }
+
+            case "getAllPools": {
+                const allPools = this.storage.pools.getAllPools()
+                return JSON.stringify(allPools)
+            }
+
+            case "getPoolsByBaseTokenId": {
+                const poolsByBaseTokenId = this.storage.pools.getPoolsByBaseTokenId({
+                    baseTokenId: Field.from(reqBody.baseTokenId),
+                })
+                return JSON.stringify(poolsByBaseTokenId)
+            }
+
+            case "getPoolsByQuoteTokenId": {
+                const poolsByQuoteTokenId = this.storage.pools.getPoolsByQuoteTokenId({
+                    quoteTokenId: Field.from(reqBody.quoteTokenId),
+                })
+                return JSON.stringify(poolsByQuoteTokenId)
+            }
+
+            case "getPool": {
+                const pool = this.storage.pools.get({
+                    baseTokenId: Field.from(reqBody.baseTokenId),
+                    quoteTokenId: Field.from(reqBody.quoteTokenId),
+                })
+                return JSON.stringify(pool)
+            }
+
+            case "getAllLiquidities": {
+                const allLiquidities = this.storage.liquidities.getAllLiquidities()
+                return JSON.stringify(allLiquidities)
+            }
+
+            case "getLiquiditiesByProvider": {
+                const liquiditiesByProvider =
+                    this.storage.liquidities.getLiquiditiesByProvider({
+                        provider: PublicKey.fromBase58(reqBody.provider),
+                    })
+                return JSON.stringify(liquiditiesByProvider)
+            }
+
+            case "getLiquiditiesByPool": {
+                const liquiditiesByPool = this.storage.liquidities.getLiquiditiesByPool({
+                    baseTokenId: Field.from(reqBody.baseTokenId),
+                    quoteTokenId: Field.from(reqBody.quoteTokenId),
+                })
+                return JSON.stringify(liquiditiesByPool)
+            }
+
+            case "getLiquidity": {
+                const liquidity = this.storage.liquidities.get({
+                    baseTokenId: Field.from(reqBody.baseTokenId),
+                    quoteTokenId: Field.from(reqBody.quoteTokenId),
+                    provider: PublicKey.fromBase58(reqBody.provider),
+                })
+                return JSON.stringify(liquidity)
+            }
+
+            default:
+                throw Error("Impossible to reach here.")
+        }
     }
 }

@@ -134,7 +134,25 @@ export class StorageForPools {
     /**
      *  Returns all the pools.
      */
-    public getPools(): Array<Pool> {
+    public getAllPools(): Array<Pool> {
         return this.innerArray
+    }
+
+    /**
+     *  Returns pools with the given base token ID.
+     */
+    public getPoolsByBaseTokenId(params: { baseTokenId: Field }): Array<Pool> {
+        return this.innerArray.filter((pool) =>
+            pool.baseTokenId.equals(params.baseTokenId).toBoolean(),
+        )
+    }
+
+    /**
+     *  Returns pools with the given quote token ID.
+     */
+    public getPoolsByQuoteTokenId(params: { quoteTokenId: Field }): Array<Pool> {
+        return this.innerArray.filter((pool) =>
+            pool.quoteTokenId.equals(params.quoteTokenId).toBoolean(),
+        )
     }
 }
