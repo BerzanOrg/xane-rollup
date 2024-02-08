@@ -166,4 +166,21 @@ export class StorageForLiquidities {
                 .toBoolean(),
         )
     }
+
+    /**
+     * Returns `true`, if a liquidty of the given provider with the same base and quote token IDs exists.
+     *
+     * Otherwise, returns `false`.
+     */
+    public exists(params: {
+        baseTokenId: Field
+        quoteTokenId: Field
+        provider: PublicKey
+    }): boolean {
+        const liquidityIndex = this.innerArray.findIndex((liquidity) =>
+            liquidity.matches(params),
+        )
+
+        return liquidityIndex !== -1
+    }
 }

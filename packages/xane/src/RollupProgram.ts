@@ -1,4 +1,4 @@
-import { Field, Poseidon, PublicKey, Signature, UInt64, ZkProgram } from "o1js"
+import { Field, Poseidon, PublicKey, Signature, UInt64, ZkProgram, SelfProof } from "o1js"
 import { PoolWitness } from "./StorageForPools.js"
 import { LiqudityWitness } from "./StorageForLiquidities.js"
 import { Balance, Liquidity, Pool } from "./Structs.js"
@@ -14,21 +14,21 @@ export const RollupProgram = ZkProgram({
     publicInput: RollupState,
 
     methods: {
-        dumbMethod: {
-            privateInputs: [PublicKey, Signature],
-            method(rollupState: RollupState, sender: PublicKey, signature: Signature) {
-                const message: Array<Field> = []
-                signature.verify(sender, message).assertTrue()
-            },
+        genesis: {
+            privateInputs: [],
+            method() {},
         },
         addBalanceV2: {
-            privateInputs: [UInt64, Balance, BalanceWitness],
+            privateInputs: [SelfProof, UInt64, Balance, BalanceWitness],
             method(
                 rollupState: RollupState,
+                selfProof: SelfProof<RollupState, void>,
                 amount: UInt64,
                 balance: Balance,
                 balanceWitness: BalanceWitness,
             ) {
+                selfProof.verify()
+
                 rollupState.addBalance({
                     amount,
                     balance,
@@ -37,13 +37,16 @@ export const RollupProgram = ZkProgram({
             },
         },
         subBalanceV2: {
-            privateInputs: [UInt64, Balance, BalanceWitness],
+            privateInputs: [SelfProof, UInt64, Balance, BalanceWitness],
             method(
                 rollupState: RollupState,
+                selfProof: SelfProof<RollupState, void>,
                 amount: UInt64,
                 balance: Balance,
                 balanceWitness: BalanceWitness,
             ) {
+                selfProof.verify()
+
                 rollupState.subBalance({
                     amount,
                     balance,
@@ -53,6 +56,7 @@ export const RollupProgram = ZkProgram({
         },
         createPoolV2: {
             privateInputs: [
+                SelfProof,
                 PublicKey,
                 Signature,
                 UInt64,
@@ -67,6 +71,7 @@ export const RollupProgram = ZkProgram({
             ],
             method(
                 rollupState: RollupState,
+                selfProof: SelfProof<RollupState, void>,
                 sender: PublicKey,
                 signature: Signature,
                 baseTokenAmount: UInt64,
@@ -79,6 +84,8 @@ export const RollupProgram = ZkProgram({
                 poolWitness: PoolWitness,
                 liquidityWitness: LiqudityWitness,
             ) {
+                selfProof.verify()
+
                 rollupState.createPool({
                     sender,
                     signature,
@@ -96,6 +103,7 @@ export const RollupProgram = ZkProgram({
         },
         addLiquidityV2: {
             privateInputs: [
+                SelfProof,
                 PublicKey,
                 Signature,
                 UInt64,
@@ -110,6 +118,7 @@ export const RollupProgram = ZkProgram({
             ],
             method(
                 rollupState: RollupState,
+                selfProof: SelfProof<RollupState, void>,
                 sender: PublicKey,
                 signature: Signature,
                 baseTokenAmount: UInt64,
@@ -122,6 +131,8 @@ export const RollupProgram = ZkProgram({
                 poolWitness: PoolWitness,
                 liquidityWitness: LiqudityWitness,
             ) {
+                selfProof.verify()
+
                 rollupState.addLiquidity({
                     sender,
                     signature,
@@ -139,6 +150,7 @@ export const RollupProgram = ZkProgram({
         },
         removeLiquidityV2: {
             privateInputs: [
+                SelfProof,
                 PublicKey,
                 Signature,
                 UInt64,
@@ -154,6 +166,7 @@ export const RollupProgram = ZkProgram({
             ],
             method(
                 rollupState: RollupState,
+                selfProof: SelfProof<RollupState, void>,
                 sender: PublicKey,
                 signature: Signature,
                 lpPoints: UInt64,
@@ -167,6 +180,8 @@ export const RollupProgram = ZkProgram({
                 poolWitness: PoolWitness,
                 liquidityWitness: LiqudityWitness,
             ) {
+                selfProof.verify()
+
                 rollupState.removeLiquidity({
                     sender,
                     signature,
@@ -185,6 +200,7 @@ export const RollupProgram = ZkProgram({
         },
         buyV2: {
             privateInputs: [
+                SelfProof,
                 PublicKey,
                 Signature,
                 UInt64,
@@ -197,6 +213,7 @@ export const RollupProgram = ZkProgram({
             ],
             method(
                 rollupState: RollupState,
+                selfProof: SelfProof<RollupState, void>,
                 sender: PublicKey,
                 signature: Signature,
                 baseTokenAmount: UInt64,
@@ -207,6 +224,8 @@ export const RollupProgram = ZkProgram({
                 balanceDoubleWitness: BalanceDoubleWitness,
                 poolWitness: PoolWitness,
             ) {
+                selfProof.verify()
+
                 rollupState.buy({
                     sender,
                     signature,
@@ -222,6 +241,7 @@ export const RollupProgram = ZkProgram({
         },
         sellV2: {
             privateInputs: [
+                SelfProof,
                 PublicKey,
                 Signature,
                 UInt64,
@@ -234,6 +254,7 @@ export const RollupProgram = ZkProgram({
             ],
             method(
                 rollupState: RollupState,
+                selfProof: SelfProof<RollupState, void>,
                 sender: PublicKey,
                 signature: Signature,
                 baseTokenAmount: UInt64,
@@ -244,6 +265,8 @@ export const RollupProgram = ZkProgram({
                 balanceDoubleWitness: BalanceDoubleWitness,
                 poolWitness: PoolWitness,
             ) {
+                selfProof.verify()
+
                 rollupState.sell({
                     sender,
                     signature,

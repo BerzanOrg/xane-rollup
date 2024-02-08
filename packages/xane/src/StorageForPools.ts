@@ -155,4 +155,15 @@ export class StorageForPools {
             pool.quoteTokenId.equals(params.quoteTokenId).toBoolean(),
         )
     }
+
+    /**
+     * Returns `true`, if a pool with the same base and quote token IDs exists.
+     *
+     * Otherwise, returns `false`.
+     */
+    public exists(params: { baseTokenId: Field; quoteTokenId: Field }): boolean {
+        const poolIndex = this.innerArray.findIndex((pool) => pool.matches(params))
+
+        return poolIndex !== -1
+    }
 }

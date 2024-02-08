@@ -9,6 +9,7 @@ import {
     Liquidity,
     INITIAL_LP_POINTS,
     ProgramError,
+    RollupProof,
 } from "xane"
 import { utils } from "./utils.js"
 
@@ -23,8 +24,14 @@ describe("Program with V2 methods", async () => {
     const john = utils.generateKeypair()
     const mr305 = utils.generateKeypair()
 
+    let proof: RollupProof
+
     it("compiles rollup program", async () => {
         await RollupProgram.compile()
+    })
+
+    it("creates genesis proof", async () => {
+        proof = await RollupProgram.genesis(storage.state)
     })
 
     it("adds mina balance to berzan", async () => {
@@ -36,8 +43,9 @@ describe("Program with V2 methods", async () => {
         const balanceWitness = storage.balances.getWitnessNew()
         const amount = utils.createUInt64(2_000, 3)
 
-        const proof = await RollupProgram.addBalanceV2(
+        proof = await RollupProgram.addBalanceV2(
             storage.state,
+            proof,
             amount,
             initialBalance,
             balanceWitness,
@@ -74,8 +82,9 @@ describe("Program with V2 methods", async () => {
         const balanceWitness = storage.balances.getWitnessNew()
         const amount = utils.createUInt64(5_000, 3)
 
-        const proof = await RollupProgram.addBalanceV2(
+        proof = await RollupProgram.addBalanceV2(
             storage.state,
+            proof,
             amount,
             initialBalance,
             balanceWitness,
@@ -112,8 +121,9 @@ describe("Program with V2 methods", async () => {
         const balanceWitness = storage.balances.getWitnessNew()
         const amount = utils.createUInt64(2_000, 3)
 
-        const proof = await RollupProgram.addBalanceV2(
+        proof = await RollupProgram.addBalanceV2(
             storage.state,
+            proof,
             amount,
             initialBalance,
             balanceWitness,
@@ -150,8 +160,9 @@ describe("Program with V2 methods", async () => {
         const balanceWitness = storage.balances.getWitnessNew()
         const amount = utils.createUInt64(5_000, 3)
 
-        const proof = await RollupProgram.addBalanceV2(
+        proof = await RollupProgram.addBalanceV2(
             storage.state,
+            proof,
             amount,
             initialBalance,
             balanceWitness,
@@ -194,8 +205,9 @@ describe("Program with V2 methods", async () => {
         )
         const amount = utils.createUInt64(1_000, 3)
 
-        const proof = await RollupProgram.subBalanceV2(
+        proof = await RollupProgram.subBalanceV2(
             storage.state,
+            proof,
             amount,
             balance,
             balanceWitness,
@@ -248,11 +260,13 @@ describe("Program with V2 methods", async () => {
             ...usdAmount.toFields(),
             ...berzanMinaBalance.toFields(),
             ...berzanUsdBalance.toFields(),
+            ...balanceDoubleWitness.toFields(),
             ...poolWitness.toFields(),
             ...liquidityWitness.toFields(),
         ])
-        const proof = await RollupProgram.createPoolV2(
+        proof = await RollupProgram.createPoolV2(
             storage.state,
+            proof,
             sender,
             signature,
             minaAmount,
@@ -353,12 +367,14 @@ describe("Program with V2 methods", async () => {
             ...usdAmount.toFields(),
             ...berzanMinaBalance.toFields(),
             ...berzanUsdBalance.toFields(),
+            ...balanceDoubleWitness.toFields(),
             ...poolWitness.toFields(),
             ...liquidityWitness.toFields(),
         ])
         try {
-            const proof = await RollupProgram.createPoolV2(
+            proof = await RollupProgram.createPoolV2(
                 storage.state,
+                proof,
                 sender,
                 signature,
                 minaAmount,
@@ -429,11 +445,13 @@ describe("Program with V2 methods", async () => {
             ...johnUsdBalance.toFields(),
             ...pool.toFields(),
             ...liquidity.toFields(),
+            ...balanceDoubleWitness.toFields(),
             ...poolWitness.toFields(),
             ...liquidityWitness.toFields(),
         ])
-        const proof = await RollupProgram.addLiquidityV2(
+        proof = await RollupProgram.addLiquidityV2(
             storage.state,
+            proof,
             sender,
             signature,
             minaAmount,
@@ -539,13 +557,15 @@ describe("Program with V2 methods", async () => {
             ...johnUsdBalance.toFields(),
             ...pool.toFields(),
             ...liquidity.toFields(),
+            ...balanceDoubleWitness.toFields(),
             ...poolWitness.toFields(),
             ...liquidityWitness.toFields(),
         ])
 
         try {
-            const proof = await RollupProgram.addLiquidityV2(
+            proof = await RollupProgram.addLiquidityV2(
                 storage.state,
+                proof,
                 sender,
                 signature,
                 minaAmount,

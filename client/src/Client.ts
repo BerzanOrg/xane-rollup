@@ -1,7 +1,7 @@
-import { Field, PrivateKey, PublicKey } from "o1js"
+import { Field, PrivateKey, PublicKey, Signature, UInt64 } from "o1js"
 import { readFileSync, existsSync, writeFileSync } from "fs"
 import { Server, createServer } from "http"
-import { Balance, Liquidity, Pool, RollupStorage } from "xane"
+import { Balance, Liquidity, Pool, RollupProgram, RollupStorage } from "xane"
 import { exit } from "process"
 import { writeFile } from "fs/promises"
 import { RequestSchema, StorageSchema } from "./schemas.js"
@@ -133,12 +133,24 @@ export class Client {
     private startServer() {
         this.server.on("request", async (req, res) => {
             try {
-                const body = RequestSchema.parse(await readBodyJson(req))
-                res.writeHead(200, { "Content-Type": "application/json" })
-                res.end(JSON.stringify(this.runMethod(body)))
+                const reqBody = RequestSchema.parse(await readBodyJson(req))
+                try {
+                    const response = await this.runMethod(reqBody)
+                    res.writeHead(200, { "Content-Type": "application/json" })
+                    res.end(response)
+                } catch (error) {
+                    res.writeHead(400, { "Content-Type": "application/json" })
+                    if (typeof error === "string") {
+                        res.end(error)
+                    } else {
+                        console.error("Unknown error is below:")
+                        console.error(error)
+                        res.end("unknown-error")
+                    }
+                }
             } catch (error) {
-                res.writeHead(400)
-                res.end("non-existent method")
+                res.writeHead(400, { "Content-Type": "application/json" })
+                res.end("mistaken-method")
             }
         })
         this.server.listen(this.port)
@@ -190,7 +202,7 @@ export class Client {
     }
 
     /** Runs the given method and responds. */
-    private runMethod(reqBody: RequestSchema): string {
+    private async runMethod(reqBody: RequestSchema): Promise<string> {
         switch (reqBody.method) {
             case "getAllBalances": {
                 const allBalances = this.storage.balances.getAllBalances()
@@ -274,6 +286,579 @@ export class Client {
                     provider: PublicKey.fromBase58(reqBody.provider),
                 })
                 return JSON.stringify(liquidity)
+            }
+
+            case "createPool": {
+                const sender = PublicKey.fromBase58(reqBody.sender)
+                const signature = Signature.fromBase58(reqBody.senderSignature)
+                const baseTokenId = Field.from(reqBody.baseTokenId)
+                const quoteTokenId = Field.from(reqBody.quoteTokenId)
+                const baseTokenAmount = UInt64.from(reqBody.baseTokenAmount)
+                const quoteTokenAmount = UInt64.from(reqBody.quoteTokenAmount)
+
+                const baseTokenBalance = this.storage.balances.get({
+                    owner: sender,
+                    tokenId: baseTokenId,
+                })
+
+                const quoteTokenBalance = this.storage.balances.get({
+                    owner: sender,
+                    tokenId: quoteTokenId,
+                })
+
+                const poolExists = this.storage.pools.exists({
+                    baseTokenId,
+                    quoteTokenId,
+                })
+
+                const emptyPool = Pool.empty()
+                const emptyLiquidity = Liquidity.empty()
+                const balanceDoubleWitness = this.storage.balances.getDoubleWitness({
+                    firstTokenId: baseTokenId,
+                    secondTokenId: quoteTokenId,
+                    owner: sender,
+                })
+                const poolWitness = this.storage.pools.getWitnessNew()
+                const liquidityWitness = this.storage.liquidities.getWitnessNew()
+
+                if (poolExists) {
+                    throw JSON.stringify("pool-already-exists")
+                }
+
+                if (baseTokenBalance instanceof Error) {
+                    throw JSON.stringify("no-base-token-balance")
+                }
+
+                if (quoteTokenBalance instanceof Error) {
+                    throw JSON.stringify("no-quote-token-balance")
+                }
+
+                if (balanceDoubleWitness instanceof Error) {
+                    throw JSON.stringify("no-base-or-quote-token-balance")
+                }
+
+                try {
+                    const proof = await RollupProgram.createPoolV2(
+                        this.storage.state,
+                        sender,
+                        signature,
+                        baseTokenAmount,
+                        quoteTokenAmount,
+                        baseTokenBalance,
+                        quoteTokenBalance,
+                        emptyPool,
+                        emptyLiquidity,
+                        balanceDoubleWitness,
+                        poolWitness,
+                        liquidityWitness,
+                    )
+
+                    this.storage.state.createPool({
+                        sender,
+                        signature,
+                        baseTokenAmount,
+                        quoteTokenAmount,
+                        baseTokenBalance,
+                        quoteTokenBalance,
+                        emptyPool,
+                        emptyLiquidity,
+                        balanceDoubleWitness,
+                        poolWitness,
+                        liquidityWitness,
+                    })
+
+                    // todo: use a recursive proof
+                    proof
+
+                    this.storage.updateState()
+
+                    return JSON.stringify("ok")
+                } catch (error) {
+                    if (typeof error === "string") {
+                        throw JSON.stringify(error)
+                    } else if (error instanceof Error) {
+                        throw JSON.stringify(error.message)
+                    } else {
+                        console.error("Unknown error is below:")
+                        console.error(error)
+                        throw JSON.stringify("unknown-error")
+                    }
+                }
+            }
+
+            case "addLiquidity": {
+                const sender = PublicKey.fromBase58(reqBody.sender)
+                const signature = Signature.fromBase58(reqBody.senderSignature)
+                const baseTokenId = Field.from(reqBody.baseTokenId)
+                const quoteTokenId = Field.from(reqBody.quoteTokenId)
+                const baseTokenAmount = UInt64.from(reqBody.baseTokenAmount)
+
+                const quoteTokenAmountMaxLimit = UInt64.from(
+                    reqBody.quoteTokenAmountMaxLimit,
+                )
+
+                const baseTokenBalance = this.storage.balances.get({
+                    owner: sender,
+                    tokenId: baseTokenId,
+                })
+
+                const quoteTokenBalance = this.storage.balances.get({
+                    owner: sender,
+                    tokenId: quoteTokenId,
+                })
+
+                const pool = this.storage.pools.get({
+                    baseTokenId,
+                    quoteTokenId,
+                })
+
+                const liquidityExists = this.storage.pools.exists({
+                    baseTokenId,
+                    quoteTokenId,
+                })
+
+                const liquidity = liquidityExists
+                    ? this.storage.liquidities.get({
+                          baseTokenId,
+                          quoteTokenId,
+                          provider: sender,
+                      })
+                    : Liquidity.empty()
+
+                const balanceDoubleWitness = this.storage.balances.getDoubleWitness({
+                    firstTokenId: baseTokenId,
+                    secondTokenId: quoteTokenId,
+                    owner: sender,
+                })
+
+                const poolWitness = this.storage.pools.getWitness({
+                    baseTokenId,
+                    quoteTokenId,
+                })
+
+                const liquidityWitness = liquidityExists
+                    ? this.storage.liquidities.getWitness({
+                          baseTokenId,
+                          quoteTokenId,
+                          provider: sender,
+                      })
+                    : this.storage.liquidities.getWitnessNew()
+
+                if (baseTokenBalance instanceof Error) {
+                    throw JSON.stringify("no-base-token-balance")
+                }
+
+                if (quoteTokenBalance instanceof Error) {
+                    throw JSON.stringify("no-quote-token-balance")
+                }
+
+                if (pool instanceof Error) {
+                    throw JSON.stringify("no-pool")
+                }
+
+                if (liquidity instanceof Error) {
+                    throw JSON.stringify("no-liquidity")
+                }
+
+                if (balanceDoubleWitness instanceof Error) {
+                    throw JSON.stringify("no-base-or-quote-token-balance")
+                }
+
+                if (poolWitness instanceof Error) {
+                    throw JSON.stringify("no-pool-witness")
+                }
+
+                if (liquidityWitness instanceof Error) {
+                    throw JSON.stringify("no-liquidity-witness")
+                }
+
+                try {
+                    const proof = await RollupProgram.addLiquidityV2(
+                        this.storage.state,
+                        sender,
+                        signature,
+                        baseTokenAmount,
+                        quoteTokenAmountMaxLimit,
+                        baseTokenBalance,
+                        quoteTokenBalance,
+                        pool,
+                        liquidity,
+                        balanceDoubleWitness,
+                        poolWitness,
+                        liquidityWitness,
+                    )
+
+                    this.storage.state.addLiquidity({
+                        sender,
+                        signature,
+                        baseTokenAmount,
+                        quoteTokenAmountMaxLimit,
+                        baseTokenBalance,
+                        quoteTokenBalance,
+                        pool,
+                        liquidity,
+                        balanceDoubleWitness,
+                        poolWitness,
+                        liquidityWitness,
+                    })
+
+                    if (!liquidityExists) {
+                        this.storage.liquidities.store(liquidity)
+                    }
+
+                    // todo: use a recursive proof
+                    proof
+
+                    this.storage.updateState()
+
+                    return JSON.stringify("ok")
+                } catch (error) {
+                    if (typeof error === "string") {
+                        throw JSON.stringify(error)
+                    } else if (error instanceof Error) {
+                        throw JSON.stringify(error.message)
+                    } else {
+                        console.error("Unknown error is below:")
+                        console.error(error)
+                        throw JSON.stringify("unknown-error")
+                    }
+                }
+            }
+
+            case "removeLiquidity": {
+                const sender = PublicKey.fromBase58(reqBody.sender)
+                const signature = Signature.fromBase58(reqBody.senderSignature)
+                const baseTokenId = Field.from(reqBody.baseTokenId)
+                const quoteTokenId = Field.from(reqBody.quoteTokenId)
+                const lpPoints = UInt64.from(reqBody.lpPoints)
+
+                const baseTokenAmountMinLimit = UInt64.from(
+                    reqBody.baseTokenAmountMinLimit,
+                )
+
+                const quoteTokenAmountMinLimit = UInt64.from(
+                    reqBody.quoteTokenAmountMinLimit,
+                )
+
+                const baseTokenBalance = this.storage.balances.get({
+                    owner: sender,
+                    tokenId: baseTokenId,
+                })
+
+                const quoteTokenBalance = this.storage.balances.get({
+                    owner: sender,
+                    tokenId: quoteTokenId,
+                })
+
+                const pool = this.storage.pools.get({
+                    baseTokenId,
+                    quoteTokenId,
+                })
+
+                const liquidity = this.storage.liquidities.get({
+                    baseTokenId,
+                    quoteTokenId,
+                    provider: sender,
+                })
+
+                const balanceDoubleWitness = this.storage.balances.getDoubleWitness({
+                    firstTokenId: baseTokenId,
+                    secondTokenId: quoteTokenId,
+                    owner: sender,
+                })
+
+                const poolWitness = this.storage.pools.getWitness({
+                    baseTokenId,
+                    quoteTokenId,
+                })
+
+                const liquidityWitness = this.storage.liquidities.getWitness({
+                    baseTokenId,
+                    quoteTokenId,
+                    provider: sender,
+                })
+
+                if (baseTokenBalance instanceof Error) {
+                    throw JSON.stringify("no-base-token-balance")
+                }
+
+                if (quoteTokenBalance instanceof Error) {
+                    throw JSON.stringify("no-quote-token-balance")
+                }
+
+                if (pool instanceof Error) {
+                    throw JSON.stringify("no-pool")
+                }
+
+                if (liquidity instanceof Error) {
+                    throw JSON.stringify("no-liquidity")
+                }
+
+                if (balanceDoubleWitness instanceof Error) {
+                    throw JSON.stringify("no-base-or-quote-token-balance")
+                }
+
+                if (poolWitness instanceof Error) {
+                    throw JSON.stringify("no-pool-witness")
+                }
+
+                if (liquidityWitness instanceof Error) {
+                    throw JSON.stringify("no-liquidity-witness")
+                }
+
+                try {
+                    const proof = await RollupProgram.removeLiquidityV2(
+                        this.storage.state,
+                        sender,
+                        signature,
+                        lpPoints,
+                        baseTokenAmountMinLimit,
+                        quoteTokenAmountMinLimit,
+                        baseTokenBalance,
+                        quoteTokenBalance,
+                        pool,
+                        liquidity,
+                        balanceDoubleWitness,
+                        poolWitness,
+                        liquidityWitness,
+                    )
+
+                    this.storage.state.removeLiquidity({
+                        sender,
+                        signature,
+                        lpPoints,
+                        baseTokenAmountMinLimit,
+                        quoteTokenAmountMinLimit,
+                        baseTokenBalance,
+                        quoteTokenBalance,
+                        pool,
+                        liquidity,
+                        balanceDoubleWitness,
+                        poolWitness,
+                        liquidityWitness,
+                    })
+
+                    // todo: use a recursive proof
+                    proof
+
+                    this.storage.updateState()
+
+                    return JSON.stringify("ok")
+                } catch (error) {
+                    if (typeof error === "string") {
+                        throw JSON.stringify(error)
+                    } else if (error instanceof Error) {
+                        throw JSON.stringify(error.message)
+                    } else {
+                        console.error("Unknown error is below:")
+                        console.error(error)
+                        throw JSON.stringify("unknown-error")
+                    }
+                }
+            }
+
+            case "buy": {
+                const sender = PublicKey.fromBase58(reqBody.sender)
+                const signature = Signature.fromBase58(reqBody.senderSignature)
+                const baseTokenId = Field.from(reqBody.baseTokenId)
+                const quoteTokenId = Field.from(reqBody.quoteTokenId)
+                const baseTokenAmount = UInt64.from(reqBody.baseTokenAmount)
+
+                const quoteTokenAmountMaxLimit = UInt64.from(
+                    reqBody.quoteTokenAmountMaxLimit,
+                )
+
+                const baseTokenBalance = this.storage.balances.get({
+                    owner: sender,
+                    tokenId: baseTokenId,
+                })
+
+                const quoteTokenBalance = this.storage.balances.get({
+                    owner: sender,
+                    tokenId: quoteTokenId,
+                })
+
+                const pool = this.storage.pools.get({
+                    baseTokenId,
+                    quoteTokenId,
+                })
+
+                const balanceDoubleWitness = this.storage.balances.getDoubleWitness({
+                    firstTokenId: baseTokenId,
+                    secondTokenId: quoteTokenId,
+                    owner: sender,
+                })
+
+                const poolWitness = this.storage.pools.getWitness({
+                    baseTokenId,
+                    quoteTokenId,
+                })
+
+                if (baseTokenBalance instanceof Error) {
+                    throw JSON.stringify("no-base-token-balance")
+                }
+
+                if (quoteTokenBalance instanceof Error) {
+                    throw JSON.stringify("no-quote-token-balance")
+                }
+
+                if (pool instanceof Error) {
+                    throw JSON.stringify("no-pool")
+                }
+
+                if (balanceDoubleWitness instanceof Error) {
+                    throw JSON.stringify("no-base-or-quote-token-balance")
+                }
+
+                if (poolWitness instanceof Error) {
+                    throw JSON.stringify("no-pool-witness")
+                }
+
+                try {
+                    const proof = await RollupProgram.buyV2(
+                        this.storage.state,
+                        sender,
+                        signature,
+                        baseTokenAmount,
+                        quoteTokenAmountMaxLimit,
+                        baseTokenBalance,
+                        quoteTokenBalance,
+                        pool,
+                        balanceDoubleWitness,
+                        poolWitness,
+                    )
+
+                    this.storage.state.buy({
+                        sender,
+                        signature,
+                        baseTokenAmount,
+                        quoteTokenAmountMaxLimit,
+                        baseTokenBalance,
+                        quoteTokenBalance,
+                        pool,
+                        balanceDoubleWitness,
+                        poolWitness,
+                    })
+
+                    // todo: use a recursive proof
+                    proof
+
+                    this.storage.updateState()
+
+                    return JSON.stringify("ok")
+                } catch (error) {
+                    if (typeof error === "string") {
+                        throw JSON.stringify(error)
+                    } else if (error instanceof Error) {
+                        throw JSON.stringify(error.message)
+                    } else {
+                        console.error("Unknown error is below:")
+                        console.error(error)
+                        throw JSON.stringify("unknown-error")
+                    }
+                }
+            }
+
+            case "sell": {
+                const sender = PublicKey.fromBase58(reqBody.sender)
+                const signature = Signature.fromBase58(reqBody.senderSignature)
+                const baseTokenId = Field.from(reqBody.baseTokenId)
+                const quoteTokenId = Field.from(reqBody.quoteTokenId)
+                const baseTokenAmount = UInt64.from(reqBody.baseTokenAmount)
+
+                const quoteTokenAmountMinLimit = UInt64.from(
+                    reqBody.quoteTokenAmountMinLimit,
+                )
+
+                const baseTokenBalance = this.storage.balances.get({
+                    owner: sender,
+                    tokenId: baseTokenId,
+                })
+
+                const quoteTokenBalance = this.storage.balances.get({
+                    owner: sender,
+                    tokenId: quoteTokenId,
+                })
+
+                const pool = this.storage.pools.get({
+                    baseTokenId,
+                    quoteTokenId,
+                })
+
+                const balanceDoubleWitness = this.storage.balances.getDoubleWitness({
+                    firstTokenId: baseTokenId,
+                    secondTokenId: quoteTokenId,
+                    owner: sender,
+                })
+
+                const poolWitness = this.storage.pools.getWitness({
+                    baseTokenId,
+                    quoteTokenId,
+                })
+
+                if (baseTokenBalance instanceof Error) {
+                    throw JSON.stringify("no-base-token-balance")
+                }
+
+                if (quoteTokenBalance instanceof Error) {
+                    throw JSON.stringify("no-quote-token-balance")
+                }
+
+                if (pool instanceof Error) {
+                    throw JSON.stringify("no-pool")
+                }
+
+                if (balanceDoubleWitness instanceof Error) {
+                    throw JSON.stringify("no-base-or-quote-token-balance")
+                }
+
+                if (poolWitness instanceof Error) {
+                    throw JSON.stringify("no-pool-witness")
+                }
+
+                try {
+                    const proof = await RollupProgram.sellV2(
+                        this.storage.state,
+                        sender,
+                        signature,
+                        baseTokenAmount,
+                        quoteTokenAmountMinLimit,
+                        baseTokenBalance,
+                        quoteTokenBalance,
+                        pool,
+                        balanceDoubleWitness,
+                        poolWitness,
+                    )
+
+                    this.storage.state.sell({
+                        sender,
+                        signature,
+                        baseTokenAmount,
+                        quoteTokenAmountMinLimit,
+                        baseTokenBalance,
+                        quoteTokenBalance,
+                        pool,
+                        balanceDoubleWitness,
+                        poolWitness,
+                    })
+
+                    // todo: use a recursive proof
+                    proof
+
+                    this.storage.updateState()
+
+                    return JSON.stringify("ok")
+                } catch (error) {
+                    if (typeof error === "string") {
+                        throw JSON.stringify(error)
+                    } else if (error instanceof Error) {
+                        throw JSON.stringify(error.message)
+                    } else {
+                        console.error("Unknown error is below:")
+                        console.error(error)
+                        throw JSON.stringify("unknown-error")
+                    }
+                }
             }
 
             default:

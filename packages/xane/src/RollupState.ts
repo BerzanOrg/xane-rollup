@@ -124,6 +124,7 @@ export class RollupState extends Struct({
             ...quoteTokenAmount.toFields(),
             ...baseTokenBalance.toFields(),
             ...quoteTokenBalance.toFields(),
+            ...balanceDoubleWitness.toFields(),
             ...poolWitness.toFields(),
             ...liquidityWitness.toFields(),
         ]
@@ -232,6 +233,7 @@ export class RollupState extends Struct({
             ...quoteTokenBalance.toFields(),
             ...pool.toFields(),
             ...liquidity.toFields(),
+            ...balanceDoubleWitness.toFields(),
             ...poolWitness.toFields(),
             ...liquidityWitness.toFields(),
         ]
@@ -356,6 +358,7 @@ export class RollupState extends Struct({
             ...quoteTokenBalance.toFields(),
             ...pool.toFields(),
             ...liquidity.toFields(),
+            ...balanceDoubleWitness.toFields(),
             ...poolWitness.toFields(),
             ...liquidityWitness.toFields(),
         ]
@@ -457,6 +460,7 @@ export class RollupState extends Struct({
             ...baseTokenBalance.toFields(),
             ...quoteTokenBalance.toFields(),
             ...pool.toFields(),
+            ...balanceDoubleWitness.toFields(),
             ...poolWitness.toFields(),
         ]
 
@@ -540,6 +544,7 @@ export class RollupState extends Struct({
             ...baseTokenBalance.toFields(),
             ...quoteTokenBalance.toFields(),
             ...pool.toFields(),
+            ...balanceDoubleWitness.toFields(),
             ...poolWitness.toFields(),
         ]
 
