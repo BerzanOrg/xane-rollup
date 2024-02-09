@@ -12,11 +12,14 @@ export const RollupProgram = ZkProgram({
     name: "xane-program",
 
     publicInput: RollupState,
+    publicOutput: RollupState,
 
     methods: {
         genesis: {
             privateInputs: [],
-            method() {},
+            method(rollupState: RollupState) {
+                return rollupState
+            },
         },
         addBalanceV2: {
             privateInputs: [SelfProof, UInt64, Balance, BalanceWitness],
@@ -34,6 +37,8 @@ export const RollupProgram = ZkProgram({
                     balance,
                     balanceWitness,
                 })
+
+                return rollupState
             },
         },
         subBalanceV2: {
@@ -52,6 +57,8 @@ export const RollupProgram = ZkProgram({
                     balance,
                     balanceWitness,
                 })
+
+                return rollupState
             },
         },
         createPoolV2: {
@@ -99,6 +106,8 @@ export const RollupProgram = ZkProgram({
                     poolWitness,
                     liquidityWitness,
                 })
+
+                return rollupState
             },
         },
         addLiquidityV2: {
@@ -146,6 +155,8 @@ export const RollupProgram = ZkProgram({
                     poolWitness,
                     liquidityWitness,
                 })
+
+                return rollupState
             },
         },
         removeLiquidityV2: {
@@ -196,6 +207,8 @@ export const RollupProgram = ZkProgram({
                     poolWitness,
                     liquidityWitness,
                 })
+
+                return rollupState
             },
         },
         buyV2: {
@@ -237,6 +250,8 @@ export const RollupProgram = ZkProgram({
                     balanceDoubleWitness,
                     poolWitness,
                 })
+
+                return rollupState
             },
         },
         sellV2: {
@@ -278,6 +293,8 @@ export const RollupProgram = ZkProgram({
                     balanceDoubleWitness,
                     poolWitness,
                 })
+
+                return rollupState
             },
         },
         doNothing: {
@@ -285,6 +302,8 @@ export const RollupProgram = ZkProgram({
             method(rollupState: RollupState, sender: PublicKey, signature: Signature) {
                 const message: Array<Field> = []
                 signature.verify(sender, message).assertTrue()
+
+                return rollupState
             },
         },
         createPool: {
@@ -408,6 +427,8 @@ export const RollupProgram = ZkProgram({
                 // rollupState.balancesRoot = newCalculatedBalancesRoot
                 rollupState.poolsRoot = newCalculatedPoolsRoot
                 rollupState.liquiditiesRoot = newCalculatedLiquiditiesRoot
+
+                return rollupState
             },
         },
         addLiquidity: {
@@ -546,6 +567,8 @@ export const RollupProgram = ZkProgram({
                 // rollupState.balancesRoot = newCalculatedBalancesRoot
                 rollupState.poolsRoot = newCalculatedPoolsRoot
                 rollupState.liquiditiesRoot = newCalculatedLiquiditiesRoot
+
+                return rollupState
             },
         },
         removeLiquidity: {
@@ -683,6 +706,8 @@ export const RollupProgram = ZkProgram({
                 // rollupState.balancesRoot = newCalculatedBalancesRoot
                 rollupState.poolsRoot = newCalculatedPoolsRoot
                 rollupState.liquiditiesRoot = newCalculatedLiquiditiesRoot
+
+                return rollupState
             },
         },
         buy: {
@@ -800,6 +825,8 @@ export const RollupProgram = ZkProgram({
 
                 // rollupState.balancesRoot = newCalculatedBalancesRoot
                 rollupState.poolsRoot = newCalculatedPoolsRoot
+
+                return rollupState
             },
         },
         sell: {
@@ -915,6 +942,8 @@ export const RollupProgram = ZkProgram({
 
                 // rollupState.balancesRoot = newCalculatedBalancesRoot
                 rollupState.poolsRoot = newCalculatedPoolsRoot
+
+                return rollupState
             },
         },
     },

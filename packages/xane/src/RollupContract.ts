@@ -34,7 +34,7 @@ export class RollupContract extends SmartContract {
 
     @method updateStateHash(proof: RollupProof) {
         proof.verify()
-        const hashOfRollupState = Poseidon.hash(proof.publicInput.toFields())
+        const hashOfRollupState = Poseidon.hash(proof.publicOutput.toFields())
         this.rollupStateHash.set(hashOfRollupState)
     }
 }

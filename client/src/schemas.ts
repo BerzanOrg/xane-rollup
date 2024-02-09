@@ -30,6 +30,12 @@ export type StorageSchema = z.infer<typeof StorageSchema>
 
 /** The Zod schema used to validate rollup storage in disk. */
 export const StorageSchema = z.object({
+    lastProof: z.object({
+        publicInput: z.array(z.string()),
+        publicOutput: z.array(z.string()),
+        maxProofsVerified: z.literal(0).or(z.literal(1)).or(z.literal(2)),
+        proof: z.string(),
+    }),
     balances: z.array(
         z.object({
             tokenId: field,

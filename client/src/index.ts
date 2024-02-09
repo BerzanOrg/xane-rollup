@@ -12,7 +12,7 @@ if (!clientPort) {
     throw Error("Set `XANE_PORT` environment variable before running Xane client.")
 }
 
-const client = Client.create({
+const client = await Client.create({
     port: clientPort,
     privateKey: clientPrivateKey,
     storageDirectory: homedir() + "/.xane.json",

@@ -1,7 +1,15 @@
 import { Field, PrivateKey, PublicKey, Signature, UInt64 } from "o1js"
 import { readFileSync, existsSync, writeFileSync } from "fs"
 import { Server, createServer } from "http"
-import { Balance, Liquidity, Pool, RollupProgram, RollupStorage } from "xane"
+import {
+    Balance,
+    Liquidity,
+    Pool,
+    RollupProgram,
+    RollupProof,
+    RollupState,
+    RollupStorage,
+} from "xane"
 import { exit } from "process"
 import { writeFile } from "fs/promises"
 import { RequestSchema, StorageSchema } from "./schemas.js"
@@ -19,6 +27,7 @@ export class Client {
     private server: Server
 
     private constructor(
+        lastProof: RollupProof,
         privateKeyBase58: string,
         port: string,
         storageDirectory: string,
@@ -29,21 +38,33 @@ export class Client {
         this.privateKey = PrivateKey.fromBase58(privateKeyBase58)
         this.port = parseInt(port)
         this.storageDirectory = storageDirectory
-        this.storage = RollupStorage.restore(oldBalances, oldPools, oldLiquidites)
+        this.storage = RollupStorage.restore(
+            lastProof,
+            oldBalances,
+            oldPools,
+            oldLiquidites,
+        )
         this.server = createServer()
     }
 
     /**
      * Creates a rollup client using given configuration.
      */
-    public static create(config: {
+    public static async create(config: {
         privateKey: string
         port: string
         storageDirectory: string
     }) {
         try {
+            await RollupProgram.compile()
+
             if (!existsSync(config.storageDirectory)) {
+                const proof = await RollupProgram.genesis(
+                    new RollupState(RollupState.empty()),
+                )
+
                 const dataToSave = JSON.stringify({
+                    lastProof: proof.toJSON(),
                     balances: [],
                     pools: [],
                     liquidities: [],
@@ -57,6 +78,9 @@ export class Client {
             const savedStorage: StorageSchema = JSON.parse(savedStorageContent)
 
             StorageSchema.parse(savedStorage)
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const savedLastProof = new RollupProof(savedStorage.lastProof as any)
 
             const savedBalances = savedStorage.balances.map(
                 (balance) =>
@@ -96,6 +120,7 @@ export class Client {
             )
 
             return new Client(
+                savedLastProof,
                 config.privateKey,
                 config.port,
                 config.storageDirectory,
@@ -193,6 +218,7 @@ export class Client {
             }))
 
         const dataToSave = JSON.stringify({
+            lastProof: this.storage.lastProof.toJSON(),
             balances,
             pools,
             liquidities,
@@ -340,6 +366,7 @@ export class Client {
                 try {
                     const proof = await RollupProgram.createPoolV2(
                         this.storage.state,
+                        this.storage.lastProof,
                         sender,
                         signature,
                         baseTokenAmount,
@@ -367,10 +394,10 @@ export class Client {
                         liquidityWitness,
                     })
 
-                    // todo: use a recursive proof
-                    proof
+                    this.storage.lastProof = proof
 
                     this.storage.updateState()
+                    await this.saveState()
 
                     return JSON.stringify("ok")
                 } catch (error) {
@@ -475,6 +502,7 @@ export class Client {
                 try {
                     const proof = await RollupProgram.addLiquidityV2(
                         this.storage.state,
+                        this.storage.lastProof,
                         sender,
                         signature,
                         baseTokenAmount,
@@ -506,10 +534,10 @@ export class Client {
                         this.storage.liquidities.store(liquidity)
                     }
 
-                    // todo: use a recursive proof
-                    proof
+                    this.storage.lastProof = proof
 
                     this.storage.updateState()
+                    await this.saveState()
 
                     return JSON.stringify("ok")
                 } catch (error) {
@@ -609,6 +637,7 @@ export class Client {
                 try {
                     const proof = await RollupProgram.removeLiquidityV2(
                         this.storage.state,
+                        this.storage.lastProof,
                         sender,
                         signature,
                         lpPoints,
@@ -638,10 +667,10 @@ export class Client {
                         liquidityWitness,
                     })
 
-                    // todo: use a recursive proof
-                    proof
+                    this.storage.lastProof = proof
 
                     this.storage.updateState()
+                    await this.saveState()
 
                     return JSON.stringify("ok")
                 } catch (error) {
@@ -717,6 +746,7 @@ export class Client {
                 try {
                     const proof = await RollupProgram.buyV2(
                         this.storage.state,
+                        this.storage.lastProof,
                         sender,
                         signature,
                         baseTokenAmount,
@@ -740,10 +770,10 @@ export class Client {
                         poolWitness,
                     })
 
-                    // todo: use a recursive proof
-                    proof
+                    this.storage.lastProof = proof
 
                     this.storage.updateState()
+                    await this.saveState()
 
                     return JSON.stringify("ok")
                 } catch (error) {
@@ -819,6 +849,7 @@ export class Client {
                 try {
                     const proof = await RollupProgram.sellV2(
                         this.storage.state,
+                        this.storage.lastProof,
                         sender,
                         signature,
                         baseTokenAmount,
@@ -842,10 +873,10 @@ export class Client {
                         poolWitness,
                     })
 
-                    // todo: use a recursive proof
-                    proof
+                    this.storage.lastProof = proof
 
                     this.storage.updateState()
+                    await this.saveState()
 
                     return JSON.stringify("ok")
                 } catch (error) {
