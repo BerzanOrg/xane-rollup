@@ -11,110 +11,149 @@ function maybeSwap(b: Bool, x: Field, y: Field): [Field, Field] {
 
 class BaseMerkleDoubleWitness extends CircuitValue {
     static height: number
-    pathFirst: Field[]
-    isLeftFirst: Bool[]
-    pathSecond: Field[]
-    isLeftSecond: Bool[]
+    pathOfFirst: Field[]
+    pathOfSecond: Field[]
+    isLeftOfFirst: Bool[]
+    isLeftOfSecond: Bool[]
     height(): number {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return (this.constructor as any).height
     }
 
-    constructor(witnessFirst: Witness, witnessSecond: Witness) {
+    /**
+     * Takes a {@link Witness} and turns it into a circuit-compatible Witness.
+     * @param witnessOfFirst Witness.
+     * @returns A circuit-compatible Witness.
+     */
+    constructor(witnessOfFirst: Witness, witnessOfSecond: Witness) {
         super()
-        const heightFirst = witnessFirst.length + 1
-        const heightSecond = witnessSecond.length + 1
-
-        if (heightFirst !== this.height()) {
+        const heightOfFirst = witnessOfFirst.length + 1
+        const heightOfSecond = witnessOfSecond.length + 1
+        if (heightOfFirst !== this.height()) {
             throw Error(
-                `Length of first witness ${heightFirst}-1 doesn't match static tree height ${this.height()}.`,
+                `Length of first witness ${heightOfFirst}-1 doesn't match static tree height ${this.height()}.`,
             )
         }
-        if (heightSecond !== this.height()) {
+        if (heightOfSecond !== this.height()) {
             throw Error(
-                `Length of second witness ${heightSecond}-1 doesn't match static tree height ${this.height()}.`,
+                `Length of second witness ${heightOfSecond}-1 doesn't match static tree height ${this.height()}.`,
             )
         }
-
-        this.pathFirst = witnessFirst.map((item) => item.sibling)
-        this.isLeftFirst = witnessFirst.map((item) => Bool(item.isLeft))
-
-        this.pathSecond = witnessSecond.map((item) => item.sibling)
-        this.isLeftSecond = witnessSecond.map((item) => Bool(item.isLeft))
+        this.pathOfFirst = witnessOfFirst.map((item) => item.sibling)
+        this.isLeftOfFirst = witnessOfFirst.map((item) => Bool(item.isLeft))
+        this.pathOfSecond = witnessOfSecond.map((item) => item.sibling)
+        this.isLeftOfSecond = witnessOfSecond.map((item) => Bool(item.isLeft))
     }
 
-    calculateRoot(leafFirst: Field, leafSecond: Field): Field {
+    /**
+     * Calculates a root depending on the leaf values.
+     * @param leafOfFirst Value of the first leaf node that belongs to this Double Witness.
+     * @param leafOfFirst Value of the second leaf node that belongs to this Double Witness.
+     * @returns The calculated root.
+     */
+    calculateRoot(leafOfFirst: Field, leafOfSecond: Field): Field {
         let hash = Field(0)
-        let hashFirst = leafFirst
-        let hashSecond = leafSecond
+        let hashOfFirst = leafOfFirst
+        let hashOfSecond = leafOfSecond
         const n = this.height()
 
-        for (let i = 1; i < n; ++i) {
-            const isLeftFirst = this.isLeftFirst[i - 1]
-            const isLeftSecond = this.isLeftSecond[i - 1]
-            const pathFirst = this.pathFirst[i - 1]
-            const pathSecond = this.pathSecond[i - 1]
-            // I don't know if this `if-else` is provable.
-            if (
-                pathFirst
-                    .equals(pathSecond)
-                    .and(isLeftFirst.equals(isLeftSecond))
-                    .toBoolean()
-            ) {
-                const [left, right] = maybeSwap(isLeftFirst, hash, pathFirst)
-                hash = Poseidon.hash([left, right])
-                console.log(2324334)
-            } else {
-                const [left, right] = maybeSwap(isLeftFirst, hashFirst, hashSecond)
-                hash = Poseidon.hash([left, right])
+        let isDifferentIndex = Field(n - 1)
 
-                const [leftFirst, rightFirst] = maybeSwap(
-                    isLeftFirst,
-                    hashFirst,
-                    pathFirst,
-                )
-                const [leftSecond, rightSecond] = maybeSwap(
-                    isLeftSecond,
-                    hashSecond,
-                    pathSecond,
-                )
-                hashFirst = Poseidon.hash([leftFirst, rightFirst])
-                hashSecond = Poseidon.hash([leftSecond, rightSecond])
-            }
+        for (let i = 1; i < n; ++i) {
+            const j = n - i - 1
+
+            const isDifferent = this.isLeftOfFirst[j]
+                .equals(this.isLeftOfSecond[j])
+                .and(this.pathOfFirst[j].equals(this.pathOfSecond[j]))
+                .not()
+
+            isDifferentIndex = Provable.if(
+                isDifferent.and(isDifferentIndex.equals(n - 1)),
+                Field(j),
+                isDifferentIndex,
+            )
+        }
+
+        for (let i = 1; i < n; ++i) {
+            const [leftX, rightX] = maybeSwap(
+                this.isLeftOfFirst[i - 1],
+                hashOfFirst,
+                hashOfSecond,
+            )
+            hash = Provable.if(
+                isDifferentIndex.equals(i - 1),
+                Poseidon.hash([leftX, rightX]),
+                hash,
+            )
+
+            const [leftY, rightY] = maybeSwap(
+                this.isLeftOfFirst[i - 1],
+                hash,
+                this.pathOfFirst[i - 1],
+            )
+            hash = Provable.if(
+                isDifferentIndex.lessThan(i - 1),
+                Poseidon.hash([leftY, rightY]),
+                hash,
+            )
+
+            const [leftOfFirst, rightOfFirst] = maybeSwap(
+                this.isLeftOfFirst[i - 1],
+                hashOfFirst,
+                this.pathOfFirst[i - 1],
+            )
+            const [leftOfSecond, rightOfSecond] = maybeSwap(
+                this.isLeftOfSecond[i - 1],
+                hashOfSecond,
+                this.pathOfSecond[i - 1],
+            )
+            hashOfFirst = Poseidon.hash([leftOfFirst, rightOfFirst])
+            hashOfSecond = Poseidon.hash([leftOfSecond, rightOfSecond])
         }
 
         return hash
     }
 
+    /**
+     * Calculates the indexes of the leaf nodes that belong to this Double Witness.
+     * @returns Indexes of the leaves.
+     */
     calculateIndexes(): [Field, Field] {
         let powerOfTwo = Field(1)
-        let indexFirst = Field(0)
-        let indexSecond = Field(0)
+        let indexOfFirst = Field(0)
+        let indexOfSecond = Field(0)
         const n = this.height()
 
         for (let i = 1; i < n; ++i) {
-            indexFirst = Provable.if(
-                this.isLeftFirst[i - 1],
-                indexFirst,
-                indexFirst.add(powerOfTwo),
+            indexOfFirst = Provable.if(
+                this.isLeftOfFirst[i - 1],
+                indexOfFirst,
+                indexOfFirst.add(powerOfTwo),
             )
-            indexSecond = Provable.if(
-                this.isLeftSecond[i - 1],
-                indexSecond,
-                indexSecond.add(powerOfTwo),
+            indexOfSecond = Provable.if(
+                this.isLeftOfSecond[i - 1],
+                indexOfSecond,
+                indexOfSecond.add(powerOfTwo),
             )
             powerOfTwo = powerOfTwo.mul(2)
         }
 
-        return [indexFirst, indexSecond]
+        return [indexOfFirst, indexOfSecond]
     }
 }
 
+/**
+ * Returns a circuit-compatible Double Witness for a specific Tree height.
+ * @param height Height of the Merkle Tree that this Double Witness belongs to.
+ * @returns A circuit-compatible Merkle Double Witness.
+ */
 export function MerkleDoubleWitness(height: number): typeof BaseMerkleDoubleWitness {
     class MerkleWitness_ extends BaseMerkleDoubleWitness {
         static height = height
     }
-    arrayProp(Field, height - 1)(MerkleWitness_.prototype, "path")
-    arrayProp(Bool, height - 1)(MerkleWitness_.prototype, "isLeft")
+    arrayProp(Field, height - 1)(MerkleWitness_.prototype, "pathOfFirst")
+    arrayProp(Field, height - 1)(MerkleWitness_.prototype, "pathOfSecond")
+    arrayProp(Bool, height - 1)(MerkleWitness_.prototype, "isLeftOfFirst")
+    arrayProp(Bool, height - 1)(MerkleWitness_.prototype, "isLeftOfSecond")
     return MerkleWitness_
 }

@@ -1,7 +1,7 @@
 import { it, describe } from "node:test"
 import assert from "node:assert/strict"
 import { Field, PrivateKey, PublicKey, Signature, UInt64 } from "o1js"
-import { RollupStorage, Balance, RollupProgram, Pool, Liquidity } from "xane"
+import { RollupStorage, Balance, RollupProgram, Pool, Liquidity, RollupState } from "xane"
 
 const utils = {
     storeBalanceThenTest: (storage: RollupStorage, initialBalance: Balance) => {
@@ -106,7 +106,12 @@ const utils = {
 }
 
 describe("Program", async () => {
-    const storage = RollupStorage.empty()
+    // compile the zk program
+    await RollupProgram.compile()
+
+    const storage = RollupStorage.empty(
+        await RollupProgram.genesis(new RollupState(RollupState.empty())),
+    )
 
     // a token ID that represents MINA's for testing
     const minaTokenId = Field(1)
@@ -128,12 +133,6 @@ describe("Program", async () => {
 
     // an address that represent John's for testing
     const johnAddress = johnSecretKey.toPublicKey()
-
-    it("can compile the rollup program", async () => {
-        // compile the zk program
-        // do it before the smart contract as the zk program is a dependency of the smart contract
-        await RollupProgram.compile()
-    })
 
     // NOTE: It is necessary to update user balances to test the AMM, and I've just placed balance updates below.
     //       But we don't need to test the logic of balances, because it is already tested in `balances.test.ts` file.

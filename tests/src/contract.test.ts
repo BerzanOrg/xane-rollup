@@ -1,7 +1,7 @@
 import { it, describe } from "node:test"
 import assert from "node:assert/strict"
 import { AccountUpdate, Field, Mina, Poseidon, PrivateKey, Signature } from "o1js"
-import { RollupContract, RollupProgram, RollupStorage } from "xane"
+import { RollupContract, RollupProgram, RollupState, RollupStorage } from "xane"
 
 describe("Contract", async () => {
     // creating a local blockchain
@@ -10,7 +10,17 @@ describe("Contract", async () => {
     // setting active instance as the local blockchain
     Mina.setActiveInstance(localBlockchain)
 
-    const storage = RollupStorage.empty()
+    // compile the zk program
+    // do it before the smart contract as the zk program is a dependency of the smart contract
+    await RollupProgram.compile()
+
+    // compile the smart contract
+    await RollupContract.compile()
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const storage = RollupStorage.empty(
+        await RollupProgram.genesis(new RollupState(RollupState.empty())),
+    )
 
     // a secret key for testing
     const deployerSecretKey = localBlockchain.testAccounts[0].privateKey
@@ -33,15 +43,6 @@ describe("Contract", async () => {
     // a token ID for testing
 
     const rollupContract = new RollupContract(contractAddress)
-
-    it("can compile the rollup program and the rollup smart contract", async () => {
-        // compile the zk program
-        // do it before the smart contract as the zk program is a dependency of the smart contract
-        await RollupProgram.compile()
-
-        // compile the smart contract
-        await RollupContract.compile()
-    })
 
     it("can deploy the rollup smart contract", async () => {
         const tx = await Mina.transaction(deployerAddress, () => {

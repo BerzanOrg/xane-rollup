@@ -5,7 +5,8 @@ import { Pool, StorageError, RollupStorage, INITIAL_LP_POINTS } from "xane"
 import { utils } from "./utils.js"
 
 describe("Pool Storage", async () => {
-    const storage = RollupStorage.empty()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const storage = RollupStorage.empty({} as any)
 
     const minaTokenId = Field(1)
     const usdTokenId = Field(2)
