@@ -1,0 +1,156 @@
+---
+title: Client Methods
+description: Client methods of Xane, a rollup on Mina Protocol with its own AMM.
+---
+
+import { Card } from "@astrojs/starlight/components"
+
+Xane's client is currently a server that stores the state and generates proofs.
+
+Users of Xane will interact with Xane's client using methods.
+
+You can check the schema of methods inside this [file](https://github.com/BerzanOrg/xane-rollup/blob/main/client/src/schemas.ts) in the [repo](https://github.com/BerzanOrg/xane-rollup).
+
+## Read Methods
+
+Below are the methods that only read some data from Xane's client.
+
+Those methods don't modify the state itself and seperated by categories.
+
+### Balances
+
+<Card title="getAllBalances" icon="forward-slash">
+    **Takes:** Nothing.
+
+    **Returns:** All users' balances in each token.
+
+</Card>
+
+<Card title="getBalancesByOwner" icon="forward-slash">
+    **Takes:** A user address.
+
+    **Returns:** The user's balances in each token.
+
+</Card>
+
+<Card title="getBalancesByTokenId" icon="forward-slash">
+    **Takes:** A token ID.
+
+    **Returns:** All users' balances in the given token.
+
+</Card>
+
+<Card title="getBalance" icon="forward-slash">
+    **Takes:** A user address and a token ID.
+
+    **Returns:** The user's balance in the given token.
+
+</Card>
+
+### Pools
+
+<Card title="getAllPools" icon="forward-slash">
+    **Takes:** Nothing.
+
+    **Returns:** All AMM pools.
+
+</Card>
+
+<Card title="getPoolsByBaseTokenId" icon="forward-slash">
+    **Takes:** A token ID.
+
+    **Returns:** All AMM pools where the given token is the base currency.
+
+</Card>
+
+<Card title="getPoolsByQuoteTokenId" icon="forward-slash">
+    **Takes:** A token ID.
+
+    **Returns:** All AMM pools where the given token is the quote currency.
+
+</Card>
+
+<Card title="getPool" icon="forward-slash">
+    **Takes:** Two token IDs.
+
+    **Returns:** All AMM pools where the given tokens are the base and quote currencies.
+
+</Card>
+
+### Liquidities
+
+<Card title="getAllLiquidities" icon="forward-slash">
+    **Takes:** Nothing.
+
+    **Returns:** All users' liquidities in each pool.
+
+</Card>
+
+<Card title="getLiquiditiesByProvider" icon="forward-slash">
+    **Takes:** A user address.
+
+    **Returns:** The user's liquidities in each pool.
+
+</Card>
+
+<Card title="getLiquiditiesByPool" icon="forward-slash">
+    **Takes:** Two token IDs.
+
+    **Returns:** All users' liquidities in the pool where the given tokens are the base and quote currencies.
+
+</Card>
+
+<Card title="getLiquidity" icon="forward-slash">
+    **Takes:** A user address and two token IDs.
+
+    **Returns:** The user's liquidity in the pool where the given tokens are the base and quote currencies.
+
+</Card>
+
+## Write Methods
+
+Below are the methods that write some data to Xane's client.
+
+Those methods try to modify the state and seperated by categories.
+
+### Pools
+
+<Card title="createPool" icon="forward-slash">
+    **Takes:** The user's address, signature, two token IDs and amounts for those tokens.
+
+    **Returns:** Creates an AMM pool, if the user has enough balance and the same pool isn't created before.
+
+</Card>
+
+### Liquidities
+
+<Card title="addLiquidity" icon="forward-slash">
+    **Takes:** The user's address, signature, two token IDs, amount of the base currency and a maximum limit for the quote currency.
+
+    **Returns:** Adds liquidity to the AMM pool where the given tokens are the base and quote currencies based on the amount and the maximum limit given, if the user has enough balance and the maximum limit isn't exceeded.
+
+</Card>
+
+<Card title="removeLiquidity" icon="forward-slash">
+    **Takes:** The user's address, signature, two token IDs, amount of the LP points to be removed, and minimum limits for the base and quote currencies.
+
+    **Returns:** Removes liquidity from the AMM pool where the given tokens are the base and quote currencies based on the amount of LP points and the minimum limits given, if the user has enough LP points and the minimums limits aren't missed.
+
+</Card>
+
+### Swaps
+
+<Card title="buy" icon="forward-slash">
+   **Takes:** The user's address, signature, two token IDs, amount of the base currency and a maximum limit for the quote currency.
+
+    **Returns:** Buys the given amount of base currency from the AMM pool where the given tokens are the base and quote currencies based on the maximum limit given, if the user has enough balance in the quote currency and the maximum limit isn't exceeded.
+
+</Card>
+
+<Card title="sell" icon="forward-slash">
+   
+   **Takes:** The user's address, signature, two token IDs, amount of the base currency and a minimum limit for the quote currency.
+
+    **Returns:** Sells the given amount of base currency to the AMM pool where the given tokens are the base and quote currencies based on the minimum limit given, if the user has enough balance in the base currency and the minimum limit isn't exceeded.
+
+</Card>

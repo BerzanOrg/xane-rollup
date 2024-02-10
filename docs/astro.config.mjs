@@ -22,6 +22,10 @@ export default defineConfig({
                     label: "Project Management",
                     link: "/management",
                 },
+                {
+                    label: "Client Methods",
+                    link: "/client",
+                },
             ],
         }),
     ],
