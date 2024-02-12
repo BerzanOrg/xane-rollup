@@ -25,7 +25,7 @@ export const RollupProgram = ZkProgram({
             privateInputs: [SelfProof, UInt64, Balance, BalanceWitness],
             method(
                 rollupState: RollupState,
-                selfProof: SelfProof<RollupState, void>,
+                selfProof: SelfProof<RollupState, RollupState>,
                 amount: UInt64,
                 balance: Balance,
                 balanceWitness: BalanceWitness,
@@ -45,7 +45,7 @@ export const RollupProgram = ZkProgram({
             privateInputs: [SelfProof, UInt64, Balance, BalanceWitness],
             method(
                 rollupState: RollupState,
-                selfProof: SelfProof<RollupState, void>,
+                selfProof: SelfProof<RollupState, RollupState>,
                 amount: UInt64,
                 balance: Balance,
                 balanceWitness: BalanceWitness,
@@ -78,7 +78,7 @@ export const RollupProgram = ZkProgram({
             ],
             method(
                 rollupState: RollupState,
-                selfProof: SelfProof<RollupState, void>,
+                selfProof: SelfProof<RollupState, RollupState>,
                 sender: PublicKey,
                 signature: Signature,
                 baseTokenAmount: UInt64,
@@ -127,7 +127,7 @@ export const RollupProgram = ZkProgram({
             ],
             method(
                 rollupState: RollupState,
-                selfProof: SelfProof<RollupState, void>,
+                selfProof: SelfProof<RollupState, RollupState>,
                 sender: PublicKey,
                 signature: Signature,
                 baseTokenAmount: UInt64,
@@ -177,7 +177,7 @@ export const RollupProgram = ZkProgram({
             ],
             method(
                 rollupState: RollupState,
-                selfProof: SelfProof<RollupState, void>,
+                selfProof: SelfProof<RollupState, RollupState>,
                 sender: PublicKey,
                 signature: Signature,
                 lpPoints: UInt64,
@@ -226,7 +226,7 @@ export const RollupProgram = ZkProgram({
             ],
             method(
                 rollupState: RollupState,
-                selfProof: SelfProof<RollupState, void>,
+                selfProof: SelfProof<RollupState, RollupState>,
                 sender: PublicKey,
                 signature: Signature,
                 baseTokenAmount: UInt64,
@@ -269,7 +269,7 @@ export const RollupProgram = ZkProgram({
             ],
             method(
                 rollupState: RollupState,
-                selfProof: SelfProof<RollupState, void>,
+                selfProof: SelfProof<RollupState, RollupState>,
                 sender: PublicKey,
                 signature: Signature,
                 baseTokenAmount: UInt64,

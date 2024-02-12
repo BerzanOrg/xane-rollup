@@ -1,0 +1,100 @@
+---
+title: ZK Program
+description: ZK program of Xane, a rollup on Mina Protocol with its own AMM.
+---
+
+import { Card } from "@astrojs/starlight/components"
+
+Xane has a zk program that generates proofs to verify on-chain.
+
+The zk program has methods that contain the logic of Xane.
+
+The zk program uses recursive proofs for performance and security.
+
+The source code of the zk program resides in [this file](https://github.com/BerzanOrg/xane-rollup/blob/main/packages/xane/src/RollupProgram.ts).
+
+But the logic is implemented as [`RollupState`](https://github.com/BerzanOrg/xane-rollup/blob/main/packages/xane/src/RollupState.ts)'s methods.
+
+## Program's Methods
+
+Below are the methods of Xane's zk program.
+
+Each method takes the rollup state and some extra parameters and creates a proof while also returning an updated rollup state.
+
+<Card title="genesis" icon="forward-slash">
+    **Takes:** Rollup state.
+
+    **Does:** Nothing
+
+    **Returns:** Same rollup state.
+
+</Card>
+
+<Card title="addBalanceV2 (internal use only)" icon="forward-slash">
+    **Takes:** Rollup state, previous proof, amount, balance struct and balance witness.
+
+    **Does:** Adds given amount to balance struct and updates rollup state accordingly.
+
+    **Returns:** Updated rollup state.
+
+</Card>
+
+<Card title="subBalanceV2 (internal use only)" icon="forward-slash">
+    **Takes:** Rollup state, previous proof, amount, balance struct and balance witness.
+
+    **Does:** Subtracts given amount from balance struct and updates rollup state accordingly.
+
+    **Returns:** Updated rollup state.
+
+</Card>
+
+<Card title="createPoolV2" icon="forward-slash">
+    **Takes:** Rollup state, previous proof, sender address, sender signature, base token amount, quote token amount,
+        base token balance struct, quote token balance struct, empty pool struct, empty liquidity struct, 
+        balance double witness, pool witness, liquidity witness.
+
+    **Does:** If inputs are valid, creates a new AMM pool and updates rollup state accordingly.
+
+    **Returns:** Updated rollup state.
+
+</Card>
+
+<Card title="addLiquidityV2" icon="forward-slash">
+    **Takes:** Rollup state, previous proof, sender address, sender signature, base token amount, maximum limit for quote token amount, 
+        base token balance struct, quote token balance struct, pool struct, liquidity struct, balance double witness, pool witness, liquidity witness.
+
+    **Does:** If inputs are valid and the maximum limit isn't exceeded, adds liquidity to an AMM pool and updates rollup state accordingly.
+
+    **Returns:** Updated rollup state.
+
+</Card>
+
+<Card title="removeLiquidityV2" icon="forward-slash">
+    **Takes:** Rollup state, previous proof, sender address, sender signature, LP points amount, minimum limit for base token amount, minimum limit for quote token amount, 
+        base token balance struct, quote token balance struct, pool struct, liquidity struct, balance double witness, pool witness, liquidity witness.
+
+    **Does:** If inputs are valid and the minimum limits are met, removes liquidity from an AMM pool and updates rollup state accordingly.
+
+    **Returns:** Updated rollup state.
+
+</Card>
+
+<Card title="buyV2" icon="forward-slash">
+    **Takes:** Rollup state, previous proof, sender addrss, sender signature, base token amount, maximum limit for quote token amount, 
+        base token balance struct, quote token balance struct, pool struct, balance double witness, pool witness.
+
+    **Does:** If inputs are valid and the maximum limit isn't exceeded, buys base tokens with quote tokens.
+
+    **Returns:** Updated rollup state.
+
+</Card>
+
+<Card title="sellV2" icon="forward-slash">
+    **Takes:** Rollup state, previous proof, sender addrss, sender signature, base token amount, minimum limit for quote token amount, 
+        base token balance struct, quote token balance struct, pool struct, balance double witness, pool witness.
+
+    **Does:** If inputs are valid and the minimum limit is met, sells base tokens for quote tokens.
+
+    **Returns:** Updated rollup state.
+
+</Card>

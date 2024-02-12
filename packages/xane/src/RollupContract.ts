@@ -27,14 +27,15 @@ export class RollupContract extends SmartContract {
         })
     }
 
-    @method initStateHash(rollupState: RollupState) {
-        const hashOfRollupState = Poseidon.hash(rollupState.toFields())
-        this.rollupStateHash.set(hashOfRollupState)
+    init() {
+        const emptyRollupState = new RollupState(RollupState.empty())
+        const emptyRollupStateHash = Poseidon.hash(emptyRollupState.toFields())
+        this.rollupStateHash.set(emptyRollupStateHash)
     }
 
     @method updateStateHash(proof: RollupProof) {
         proof.verify()
-        const hashOfRollupState = Poseidon.hash(proof.publicOutput.toFields())
-        this.rollupStateHash.set(hashOfRollupState)
+        const rollupStateHash = Poseidon.hash(proof.publicOutput.toFields())
+        this.rollupStateHash.set(rollupStateHash)
     }
 }

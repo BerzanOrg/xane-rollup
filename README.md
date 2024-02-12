@@ -1,6 +1,6 @@
 # Xane Rollup
 
-> Visit https://docs.xane.berzan.org/ for more info.
+> Visit https://xanedocs.pages.dev/ for more info.
 
 This repository contains the source code of Xane, a rollup on top of [Mina Protocol](https://minaprotocol.com/) with its own AMM.
 

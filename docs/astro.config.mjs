@@ -3,6 +3,7 @@ import starlight from "@astrojs/starlight"
 
 // https://astro.build/config
 export default defineConfig({
+    site: "https://xanedocs.pages.dev",
     integrations: [
         starlight({
             title: "Xane",
@@ -21,6 +22,14 @@ export default defineConfig({
                 {
                     label: "Project Management",
                     link: "/management",
+                },
+                {
+                    label: "Smart Contract",
+                    link: "/contract",
+                },
+                {
+                    label: "ZK Program",
+                    link: "/program",
                 },
                 {
                     label: "Client Methods",
